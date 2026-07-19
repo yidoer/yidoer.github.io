@@ -238,7 +238,7 @@ const BlogApp = {
   // 数据加载
   async loadData(type) {
     try {
-      const response = await fetch(`data/${type}.json`);
+      const response = await fetch(`/data/${type}.json`);
       if (!response.ok) throw new Error(`Failed to load ${type}.json`);
       const data = await response.json();
       return data[type] || [];
@@ -246,6 +246,14 @@ const BlogApp = {
       console.error(`Error loading ${type}:`, error);
       return [];
     }
+  },
+
+  // 文章永久链接
+  articleUrl(article) {
+    if (article.path) return article.path;
+    const date = String(article.date || new Date().toISOString().slice(0, 10)).split('-');
+    const slug = (article.slug || article.id || 'article').toString().toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, '-').replace(/^-+|-+$/g, '');
+    return `/articles/${date[0]}/${date[1] || '01'}/${date[2] || '01'}/${slug}/`;
   },
 
   // 格式化日期
@@ -259,12 +267,15 @@ const BlogApp = {
 
   // 导航高亮
   highlightNav() {
-    const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+    const pathname = window.location.pathname;
+    const currentPath = pathname.split('/').pop() || 'index.html';
+    const isArticlePage = pathname.includes('/articles/') || currentPath === 'article.html';
     document.querySelectorAll('.nav-menu a').forEach(link => {
       const linkPath = link.getAttribute('href');
-      if (linkPath === currentPath ||
-          (currentPath === '' && linkPath === 'index.html') ||
-          (currentPath === 'article.html' && linkPath === 'articles.html')) {
+      const normalizedLinkPath = linkPath ? linkPath.replace(/^\//, '') : '';
+      if (normalizedLinkPath === currentPath ||
+          (currentPath === 'index.html' && normalizedLinkPath === '') ||
+          (isArticlePage && normalizedLinkPath === 'articles.html')) {
         link.classList.add('active');
       } else {
         link.classList.remove('active');
@@ -307,47 +318,29 @@ const BlogApp = {
     });
   },
 
-  // 初始化评论组件 (Giscus)
+  // 初始化评论组件（Utterances，按文章 pathname 独立建帖）
   initComments() {
-    const commentsContainer = document.getElementById('giscus-container');
-    if (!commentsContainer) return;
+    const commentsContainer = document.getElementById('comments-container') || document.getElementById('giscus-container');
+    if (!commentsContainer || commentsContainer.dataset.loaded === 'true') return;
 
-    // 从页面配置获取 Giscus 设置
-    const giscusConfig = window.GISCUS_CONFIG || {};
-    if (!giscusConfig.repo) return;
-
+    commentsContainer.dataset.loaded = 'true';
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'github-dark' : 'github-light';
     const script = document.createElement('script');
-    script.src = 'https://giscus.app/client.js';
-    script.setAttribute('data-repo', giscusConfig.repo);
-    script.setAttribute('data-repo-id', giscusConfig.repoId || '');
-    script.setAttribute('data-category', giscusConfig.category || 'Announcements');
-    script.setAttribute('data-category-id', giscusConfig.categoryId || '');
-    script.setAttribute('data-mapping', giscusConfig.mapping || 'pathname');
-    script.setAttribute('data-strict', '0');
-    script.setAttribute('data-reactions-enabled', '1');
-    script.setAttribute('data-emit-metadata', '0');
-    script.setAttribute('data-input-position', 'bottom');
-    script.setAttribute('data-theme', document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
-    script.setAttribute('data-lang', 'zh-CN');
+    script.src = 'https://utteranc.es/client.js';
+    script.setAttribute('repo', 'yidoer/yidoer.github.io');
+    script.setAttribute('issue-term', 'pathname');
+    script.setAttribute('label', 'comment');
+    script.setAttribute('theme', theme);
     script.setAttribute('crossorigin', 'anonymous');
     script.async = true;
-
     commentsContainer.appendChild(script);
 
-    // 监听主题切换，更新评论主题
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'data-theme') {
-          const theme = document.documentElement.getAttribute('data-theme');
-          const iframe = document.querySelector('iframe.giscus-frame');
-          if (iframe) {
-            iframe.contentWindow.postMessage(
-              { giscus: { setConfig: { theme: theme === 'dark' ? 'dark' : 'light' } } },
-              'https://giscus.app'
-            );
-          }
-        }
-      });
+    const observer = new MutationObserver(mutations => {
+      if (!mutations.some(mutation => mutation.attributeName === 'data-theme')) return;
+      const iframe = document.querySelector('iframe.utterances-frame');
+      if (!iframe) return;
+      const nextTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'github-dark' : 'github-light';
+      iframe.contentWindow.postMessage({ type: 'set-theme', theme: nextTheme }, 'https://utteranc.es');
     });
     observer.observe(document.documentElement, { attributes: true });
   },

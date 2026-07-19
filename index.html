@@ -112,7 +112,7 @@
       } else {
         const latest = articles.slice(0, 3);
         latestArticlesContainer.innerHTML = latest.map((article, index) => `
-          <a href="article.html?id=${article.id}" class="article-card fade-in fade-in-delay-${index + 1}">
+          <a href="${BlogApp.articleUrl(article)}" class="article-card fade-in fade-in-delay-${index + 1}">
             <div class="article-card-header">
               <span class="article-date">${BlogApp.formatDate(article.date)}</span>
               <span class="article-category">${article.category || '未分类'}</span>

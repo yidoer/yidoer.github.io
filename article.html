@@ -3,173 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="文章详情 - 人间浊物 琅上清书">
-  <title>文章 - 人间浊物 琅上清书</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📜</text></svg>">
-  <script>
-    // Giscus 配置 - 请修改为你的 GitHub 仓库信息
-    window.GISCUS_CONFIG = {
-      repo: 'your-username/your-repo',      // 替换为你的仓库，如: username/blog
-      repoId: '',                           // 仓库 ID（可留空，Giscus 会自动获取）
-      category: 'Announcements',           // 仓库中的 Discussions 分类
-      categoryId: '',                       // 分类 ID（可留空）
-      mapping: 'pathname'                   // 映射方式：pathname, url, title, og:title
-    };
-  </script>
+  <meta name="robots" content="noindex">
+  <title>正在跳转 - 人间浊物 琅上清书</title>
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <header class="site-header">
-    <div class="header-inner">
-      <a href="index.html" class="site-logo">
-        <span class="logo-seal">清</span>
-        <span>人间浊物</span>
-      </a>
-      <nav>
-        <button class="menu-toggle" id="menu-toggle" aria-label="打开菜单" title="菜单">☰</button>
-        <ul class="nav-menu" id="nav-menu">
-          <li><a href="index.html">首页</a></li>
-          <li><a href="notes.html">小记</a></li>
-          <li><a href="articles.html">文章</a></li>
-          <li><a href="about.html">关于</a></li>
-          <li><button class="theme-toggle" id="theme-toggle" title="切换主题" aria-label="切换主题">☾</button></li>
-        </ul>
-      </nav>
-    </div>
-  </header>
-
-  <main class="site-main">
-    <div class="content-wrapper">
-      <!-- 文章头部 -->
-      <header class="article-header" id="article-header">
-        <div class="loading-spinner" style="margin: 48px auto; display: block;"></div>
-      </header>
-
-      <!-- 文章内容 -->
-      <article class="markdown-body" id="article-content">
-        <div class="empty-state">
-          <div class="loading-spinner"></div>
-          <p class="empty-state-text">正在加载文章...</p>
-        </div>
-      </article>
-
-      <!-- 文章导航 -->
-      <nav class="article-nav" id="article-nav" style="display: none;">
-        <a href="" class="article-nav-link article-nav-prev" id="prev-article">
-          <span>←</span>
-          <span>上一篇</span>
-        </a>
-        <a href="articles.html" class="article-nav-link">
-          <span>📖 返回列表</span>
-        </a>
-        <a href="" class="article-nav-link article-nav-next" id="next-article">
-          <span>下一篇</span>
-          <span>→</span>
-        </a>
-      </nav>
-
-      <!-- 评论区域 -->
-      <section class="comments-section">
-        <h2 class="comments-title">💬 评论</h2>
-        <div id="giscus-container"></div>
-      </section>
-    </div>
-  </main>
-
-  <footer class="site-footer">
-    <div class="footer-inner">
-      <div class="footer-links">
-        <a href="index.html">首页</a>
-        <a href="notes.html">小记</a>
-        <a href="articles.html">文章</a>
-        <a href="about.html">关于</a>
-      </div>
-      <p>© 2024 人间浊物. 以墨为友，以书为伴。</p>
-    </div>
-  </footer>
-
-  <button class="back-to-top" id="back-to-top" title="返回顶部" aria-label="返回顶部">↑</button>
-
-  <script src="js/app.js"></script>
+  <main class="site-main"><div class="content-wrapper"><div class="empty-state"><p class="empty-state-text">正在跳转到文章新地址...</p><p><a href="/articles.html">返回文章列表</a></p></div></div></main>
   <script>
     (async function() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const articleId = urlParams.get('id');
-
-      const headerEl = document.getElementById('article-header');
-      const contentEl = document.getElementById('article-content');
-      const navEl = document.getElementById('article-nav');
-      const prevLink = document.getElementById('prev-article');
-      const nextLink = document.getElementById('next-article');
-
-      if (!articleId) {
-        headerEl.innerHTML = `<h1 class="article-header-title">文章未找到</h1>
-          <div class="article-meta"><span>请检查链接是否正确</span></div>`;
-        contentEl.innerHTML = `<div class="empty-state">
-          <div class="empty-state-icon">❓</div>
-          <p class="empty-state-text">未指定文章 ID</p>
-          <p><a href="articles.html" style="color: var(--accent-color);">返回文章列表 →</a></p>
-        </div>`;
-        return;
-      }
-
-      const articles = await BlogApp.loadData('articles');
-      const article = articles.find(a => a.id === articleId);
-
-      if (!article) {
-        headerEl.innerHTML = `<h1 class="article-header-title">文章未找到</h1>
-          <div class="article-meta"><span>ID: ${articleId}</span></div>`;
-        contentEl.innerHTML = `<div class="empty-state">
-          <div class="empty-state-icon">❓</div>
-          <p class="empty-state-text">找不到指定文章</p>
-          <p><a href="articles.html" style="color: var(--accent-color);">返回文章列表 →</a></p>
-        </div>`;
-        return;
-      }
-
-      // 更新页面标题
-      document.title = `${article.title} - 人间浊物 琅上清书`;
-
-      // 渲染文章头部
-      headerEl.innerHTML = `
-        <h1 class="article-header-title">${article.title}</h1>
-        <div class="article-meta">
-          <span>📅 ${BlogApp.formatDate(article.date)}</span>
-          <span>📁 ${article.category || '未分类'}</span>
-          <span>🏷️ ${(article.tags || []).join(', ') || '无标签'}</span>
-        </div>
-      `;
-
-      // 渲染文章内容
-      contentEl.innerHTML = Markdown.parse(article.content);
-
-      // 设置文章导航
-      const sortedArticles = [...articles].sort((a, b) => new Date(b.date) - new Date(a.date));
-      const currentIndex = sortedArticles.findIndex(a => a.id === articleId);
-
-      navEl.style.display = 'flex';
-
-      if (currentIndex > 0) {
-        const prev = sortedArticles[currentIndex - 1];
-        prevLink.href = `article.html?id=${prev.id}`;
-        prevLink.querySelector('span:last-child').textContent = prev.title;
-      } else {
-        prevLink.style.display = 'none';
-      }
-
-      if (currentIndex < sortedArticles.length - 1) {
-        const next = sortedArticles[currentIndex + 1];
-        nextLink.href = `article.html?id=${next.id}`;
-        nextLink.querySelector('span:first-child').textContent = next.title;
-      } else {
-        nextLink.style.display = 'none';
-      }
-
-      // 初始化评论
-      BlogApp.initComments();
+      const articleId = new URLSearchParams(location.search).get('id');
+      const response = await fetch('/data/articles.json');
+      const data = await response.json();
+      const article = (data.articles || []).find(item => item.id === articleId);
+      if (article) location.replace(article.path);
     })();
   </script>
 </body>

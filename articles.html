@@ -141,7 +141,7 @@
           `;
         } else {
           articlesList.innerHTML = pageArticles.map((article, index) => `
-            <a href="article.html?id=${article.id}" class="article-card fade-in fade-in-delay-${Math.min(index + 1, 4)}">
+            <a href="${BlogApp.articleUrl(article)}" class="article-card fade-in fade-in-delay-${Math.min(index + 1, 4)}">
               <div class="article-card-header">
                 <span class="article-date">${BlogApp.formatDate(article.date)}</span>
                 <span class="article-category">${article.category || '未分类'}</span>

@@ -1877,3 +1877,35 @@ body {
 .editor-info-box a:hover {
   text-decoration: underline;
 }
+
+/* =====================================================
+   文章路径导航
+   ===================================================== */
+
+.article-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.article-breadcrumb a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.article-breadcrumb a:hover {
+  color: var(--accent-color);
+}
+
+.article-nav-title:empty {
+  display: none;
+}
+
+#comments-container {
+  min-height: 120px;
+}

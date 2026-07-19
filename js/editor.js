@@ -112,10 +112,15 @@ const Editor = {
   saveArticle() {
     const title = document.getElementById('article-title').value.trim();
     if (!title) { this.showToast('请输入文章标题', 'error'); return; }
+    const articleId = this.current.id || 'article-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+    const date = document.getElementById('article-date').value || new Date().toISOString().split('T')[0];
+    const existingArticle = this.data.articles.find(article => article.id === this.current.id);
+    const slug = this.slugify(title) || articleId;
     const art = {
-      id: this.current.id || 'article-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+      id: articleId,
+      path: existingArticle?.path || `/articles/${date.replaceAll('-', '/')}/${slug}/`,
       title,
-      date: document.getElementById('article-date').value || new Date().toISOString().split('T')[0],
+      date,
       category: document.getElementById('article-category').value.trim(),
       tags: document.getElementById('article-tags').value.split(',').map(t => t.trim()).filter(t => t),
       excerpt: document.getElementById('article-excerpt').value.trim(),
@@ -433,6 +438,15 @@ const Editor = {
     toast.className = `editor-toast ${type}`;
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 3000);
+  },
+
+  slugify(text) {
+    return text
+      .normalize('NFKD')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\u4e00-\u9fff]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   },
 
   escapeHtml(str) {

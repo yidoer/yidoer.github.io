@@ -27,6 +27,9 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Generate article pages
+        run: node scripts/generate-articles.js
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
