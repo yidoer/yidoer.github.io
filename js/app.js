@@ -375,62 +375,21 @@ const BlogApp = {
   },
 
   analytics: {
-    endpoint: 'https://www.21sdk.com/api/v1/track',
-    websiteId: 1546,
+    scriptUrl: 'https://www.21sdk.com/tjs?id=ws_bfd320116d33734c21ec59a0e9c0a287',
 
-    shouldTrack() {
-      const localHosts = new Set(['localhost', '127.0.0.1', '::1']);
+    shouldLoad() {
       const editorPages = new Set(['/editor.html', '/mobile-editor.html']);
-      return location.protocol === 'https:' &&
-        !localHosts.has(location.hostname) &&
-        !editorPages.has(location.pathname) &&
-        navigator.doNotTrack !== '1';
+      return !editorPages.has(location.pathname) && navigator.doNotTrack !== '1';
     },
 
-    visitorId() {
-      const storageKey = 'site-analytics-visitor-id';
-      try {
-        const existing = localStorage.getItem(storageKey);
-        if (existing) return existing;
-        const created = crypto.randomUUID ? crypto.randomUUID() : `visitor-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        localStorage.setItem(storageKey, created);
-        return created;
-      } catch (_) {
-        return `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      }
-    },
-
-    schedule() {
-      if (!this.shouldTrack() || window.__sitePageTracked) return;
-      const track = () => {
-        if ('requestIdleCallback' in window) {
-          requestIdleCallback(() => this.track(), { timeout: 2000 });
-        } else {
-          setTimeout(() => this.track(), 800);
-        }
-      };
-      if (document.readyState === 'complete') track();
-      else window.addEventListener('load', track, { once: true });
-    },
-
-    track() {
-      if (window.__sitePageTracked) return;
-      window.__sitePageTracked = true;
-      const pageUrl = `${location.origin}${location.pathname}${location.search}`;
-      fetch(this.endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          website_id: this.websiteId,
-          visitor_id: this.visitorId(),
-          page_url: pageUrl,
-          page_title: document.title,
-          referrer: document.referrer,
-          user_agent: navigator.userAgent
-        }),
-        keepalive: true,
-        credentials: 'omit'
-      }).catch(error => console.debug('Analytics request skipped:', error));
+    load() {
+      if (!this.shouldLoad() || document.querySelector('script[data-site-analytics]')) return;
+      const script = document.createElement('script');
+      script.src = this.scriptUrl;
+      script.async = true;
+      script.dataset.siteAnalytics = '21sdk';
+      script.referrerPolicy = 'strict-origin-when-cross-origin';
+      document.head.appendChild(script);
     }
   },
 
@@ -440,7 +399,7 @@ const BlogApp = {
     this.highlightNav();
     this.initMobileMenu();
     this.initBackToTop();
-    this.analytics.schedule();
+    this.analytics.load();
   }
 };
 
