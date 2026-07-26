@@ -362,10 +362,33 @@ const BlogApp = {
 
     commentsContainer.dataset.loaded = 'loading';
     commentsContainer.replaceChildren();
+    const createGitHubFallback = () => {
+      const fallback = document.createElement('div');
+      fallback.className = 'comments-fallback';
+      const canonicalHref = document.querySelector('link[rel="canonical"]')?.href || window.location.href;
+      let issueTerm = window.location.pathname.replace(/^\/+/, '') || 'index';
+      try {
+        issueTerm = new URL(canonicalHref, window.location.origin).pathname.replace(/^\/+/, '') || issueTerm;
+      } catch (_) {}
+      const repositoryUrl = 'https://github.com/yidoer/yidoer.github.io';
+      const searchLink = document.createElement('a');
+      searchLink.href = `${repositoryUrl}/issues?q=${encodeURIComponent(`is:issue in:title "${issueTerm}"`)}`;
+      searchLink.target = '_blank';
+      searchLink.rel = 'noopener noreferrer';
+      searchLink.textContent = '在 GitHub 查看评论';
+      const newIssueLink = document.createElement('a');
+      newIssueLink.href = `${repositoryUrl}/issues/new?title=${encodeURIComponent(issueTerm)}&body=${encodeURIComponent(`页面：${canonicalHref}\n\n请在这里发表评论。`)}`;
+      newIssueLink.target = '_blank';
+      newIssueLink.rel = 'noopener noreferrer';
+      newIssueLink.textContent = '发表第一条评论';
+      fallback.append(searchLink, newIssueLink);
+      return fallback;
+    };
+
     const status = document.createElement('p');
     status.className = 'comments-status';
     status.textContent = '正在加载评论...';
-    commentsContainer.appendChild(status);
+    commentsContainer.append(status, createGitHubFallback());
 
     const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'github-dark' : 'github-light';
     const script = document.createElement('script');
@@ -407,7 +430,7 @@ const BlogApp = {
         commentsContainer.dataset.loaded = 'false';
         this.initComments();
       });
-      commentsContainer.append(message, retry);
+      commentsContainer.append(message, retry, createGitHubFallback());
     };
 
     const loadObserver = new MutationObserver(() => {
@@ -416,7 +439,7 @@ const BlogApp = {
     loadObserver.observe(commentsContainer, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
     script.addEventListener('error', showLoadError, { once: true });
     commentsContainer.appendChild(script);
-    setTimeout(showLoadError, 12000);
+    setTimeout(showLoadError, 8000);
 
     if (!this.commentsThemeObserver) {
       this.commentsThemeObserver = new MutationObserver(mutations => {

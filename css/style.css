@@ -2014,6 +2014,24 @@ select {
   min-height: 220px;
 }
 
+.comments-fallback {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 10px 0 16px;
+  font-family: var(--font-sans);
+  font-size: 0.84rem;
+}
+
+.comments-fallback a {
+  color: var(--accent-color);
+  text-decoration: none;
+}
+
+.comments-fallback a:hover {
+  text-decoration: underline;
+}
+
 .comments-status {
   margin: 12px 0;
   color: var(--text-muted);
