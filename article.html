@@ -9,13 +9,14 @@
 </head>
 <body>
   <main class="site-main"><div class="content-wrapper"><div class="empty-state"><p class="empty-state-text">正在跳转到文章新地址...</p><p><a href="/articles.html">返回文章列表</a></p></div></div></main>
+  <script src="/js/app.js"></script>
   <script>
     (async function() {
       const articleId = new URLSearchParams(location.search).get('id');
       const response = await fetch('/data/articles.json');
       const data = await response.json();
       const article = (data.articles || []).find(item => item.id === articleId);
-      if (article) location.replace(article.path);
+      if (article) location.replace(BlogApp.articleUrl(article));
     })();
   </script>
 </body>

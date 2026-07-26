@@ -224,10 +224,9 @@ const Editor = {
     if (!content) { this.showToast('请输入小记内容', 'error'); return; }
     const noteId = this.current.id || 'note-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
     const date = document.getElementById('note-date').value || new Date().toISOString().split('T')[0];
-    const existingNote = this.data.notes.find(note => note.id === this.current.id);
     const note = {
       id: noteId,
-      path: existingNote?.path || `/notes/${date.replaceAll('-', '/')}/${noteId}/`,
+      path: `/notes/${date.replaceAll('-', '/')}/${noteId}/`,
       date,
       content
     };

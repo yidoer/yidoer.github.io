@@ -250,7 +250,9 @@ const BlogApp = {
 
   // 文章永久链接
   articleUrl(article) {
-    if (article.path) return article.path;
+    if (article.path && article.path.startsWith('/articles/')) {
+      return article.path.endsWith('/') ? article.path : `${article.path}/`;
+    }
     const date = String(article.date || new Date().toISOString().slice(0, 10)).split('-');
     const slug = (article.slug || article.id || 'article').toString().toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, '-').replace(/^-+|-+$/g, '');
     return `/articles/${date[0]}/${date[1] || '01'}/${date[2] || '01'}/${slug}/`;
@@ -258,9 +260,12 @@ const BlogApp = {
 
   // 小记永久链接
   noteUrl(note) {
-    if (note.path) return note.path;
     const date = String(note.date || new Date().toISOString().slice(0, 10)).split('-');
     return `/notes/${date[0]}/${String(date[1] || '01').padStart(2, '0')}/${String(date[2] || '01').padStart(2, '0')}/${note.id || 'note'}/`;
+  },
+
+  sortByDateDesc(items) {
+    return [...items].sort((first, second) => new Date(second.date) - new Date(first.date));
   },
 
   // 格式化日期

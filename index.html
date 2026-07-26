@@ -107,7 +107,7 @@
           </div>
         `;
       } else {
-        const latest = articles.slice(0, 3);
+        const latest = BlogApp.sortByDateDesc(articles).slice(0, 3);
         latestArticlesContainer.innerHTML = latest.map((article, index) => `
           <a href="${BlogApp.articleUrl(article)}" class="article-card fade-in fade-in-delay-${index + 1}">
             <div class="article-card-header">
@@ -134,7 +134,7 @@
           </div>
         `;
       } else {
-        const latest = notes.slice(0, 4);
+        const latest = BlogApp.sortByDateDesc(notes).slice(0, 4);
         latestNotesContainer.innerHTML = latest.map((note, index) => `
           <a href="${BlogApp.noteUrl(note)}" class="note-item note-link fade-in fade-in-delay-${index + 1}">
             <div class="note-date">${BlogApp.formatDate(note.date)}</div>

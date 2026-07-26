@@ -34,7 +34,7 @@
 
   if (currentIndex > 0) {
     const previousArticle = sortedArticles[currentIndex - 1];
-    previousLink.href = previousArticle.path;
+    previousLink.href = BlogApp.articleUrl(previousArticle);
     previousLink.querySelector('.article-nav-title').textContent = previousArticle.title;
   } else {
     previousLink.hidden = true;
@@ -42,7 +42,7 @@
 
   if (currentIndex < sortedArticles.length - 1) {
     const nextArticle = sortedArticles[currentIndex + 1];
-    nextLink.href = nextArticle.path;
+    nextLink.href = BlogApp.articleUrl(nextArticle);
     nextLink.querySelector('.article-nav-title').textContent = nextArticle.title;
   } else {
     nextLink.hidden = true;

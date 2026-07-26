@@ -303,14 +303,13 @@ const MobileEditor = {
     if (!content) { this.toast('请输入内容', 'error'); return; }
     const date = document.getElementById('m-note-date').value || new Date().toISOString().split('T')[0];
     const noteId = this.currentId || 'note-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-    const existing = Editor.data.notes.find(n => n.id === this.currentId);
     let noteContent = content;
     if (this.noteImages.length && !noteContent.includes(this.noteImages[0])) {
       noteContent = this.noteImages.map(p => `\n\n![](${p})\n\n`).join('') + noteContent;
     }
     const note = {
       id: noteId,
-      path: existing?.path || `/notes/${date.replaceAll('-', '/')}/${noteId}/`,
+      path: `/notes/${date.replaceAll('-', '/')}/${noteId}/`,
       date,
       content: noteContent
     };
