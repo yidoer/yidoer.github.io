@@ -160,8 +160,8 @@ body {
 }
 
 .logo-avatar {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: 2px solid var(--accent-color);
   border-radius: 50%;
   object-fit: cover;
