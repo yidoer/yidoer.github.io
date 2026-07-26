@@ -166,11 +166,12 @@ body {
   font-size: 0.7rem;
   color: var(--accent-color);
   transition: all var(--transition);
+  background: url('../images/avatar.jpg') center/cover no-repeat;
 }
 
 .site-logo:hover .logo-seal {
-  background: var(--accent-color);
-  color: var(--bg-primary);
+  border-color: var(--accent-dark);
+  transform: scale(1.05);
 }
 
 .nav-menu {
