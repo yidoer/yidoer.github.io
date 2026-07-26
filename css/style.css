@@ -24,8 +24,8 @@
   --code-bg: #f5f2ec;
   --link-color: #4a6741;
   --link-hover: #3a5233;
-  --font-serif: "Noto Serif SC", "Source Han Serif SC", "WenQuanYi Micro Hei", "STSong", "SimSun", serif;
-  --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-serif: "Noto Serif SC", "Noto Serif CJK SC", "Source Han Serif SC", "Source Han Serif CN", "Songti SC", "STSong", "SimSun", serif;
+  --font-sans: "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", "Source Han Sans CN", "PingFang SC", "Microsoft YaHei", "Droid Sans Fallback", sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
   --transition: 0.3s ease;
   --radius: 4px;
@@ -1521,6 +1521,13 @@ body {
     font-size: 0.82rem;
     color: var(--text-muted);
   }
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
 @media (max-width: 480px) {

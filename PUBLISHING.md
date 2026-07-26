@@ -54,3 +54,7 @@
 评论使用 Utterances。正文或小记内容渲染完成后，页面才开始加载评论脚本。仓库需安装 Utterances App，并开启 GitHub Issues。
 
 > 注意：替换 JSON 时必须覆盖整个文件。不要只复制 `"articles": [...]` 这一段追加到旧文件，否则 GitHub Actions 无法解析 JSON。
+
+## 访问统计
+
+公共页面通过 `js/app.js` 在页面加载完成后的空闲时间向 21SDK 上报一次访问。统计只使用公开的网站 ID，不在前端保存 API Key；本地预览、桌面编辑器和手机编辑器不会上报。

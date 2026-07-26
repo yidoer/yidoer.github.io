@@ -203,6 +203,8 @@ const Markdown = {
  * 博客应用核心逻辑
  */
 const BlogApp = {
+  dataRequests: new Map(),
+
   // 主题管理
   theme: {
     init() {
@@ -236,16 +238,21 @@ const BlogApp = {
   },
 
   // 数据加载
-  async loadData(type) {
-    try {
-      const response = await fetch(`/data/${type}.json`);
-      if (!response.ok) throw new Error(`Failed to load ${type}.json`);
-      const data = await response.json();
-      return data[type] || [];
-    } catch (error) {
-      console.error(`Error loading ${type}:`, error);
-      return [];
-    }
+  loadData(type) {
+    if (this.dataRequests.has(type)) return this.dataRequests.get(type);
+    const request = fetch(`/data/${type}.json`)
+      .then(response => {
+        if (!response.ok) throw new Error(`Failed to load ${type}.json`);
+        return response.json();
+      })
+      .then(data => data[type] || [])
+      .catch(error => {
+        console.error(`Error loading ${type}:`, error);
+        this.dataRequests.delete(type);
+        return [];
+      });
+    this.dataRequests.set(type, request);
+    return request;
   },
 
   // 文章永久链接
@@ -324,12 +331,15 @@ const BlogApp = {
     const btn = document.getElementById('back-to-top');
     if (!btn) return;
 
+    let scheduled = false;
+    const updateVisibility = () => {
+      btn.classList.toggle('visible', window.scrollY > 300);
+      scheduled = false;
+    };
     window.addEventListener('scroll', () => {
-      if (window.scrollY > 300) {
-        btn.classList.add('visible');
-      } else {
-        btn.classList.remove('visible');
-      }
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(updateVisibility);
     }, { passive: true });
 
     btn.addEventListener('click', () => {
@@ -364,12 +374,73 @@ const BlogApp = {
     observer.observe(document.documentElement, { attributes: true });
   },
 
+  analytics: {
+    endpoint: 'https://www.21sdk.com/api/v1/track',
+    websiteId: 1546,
+
+    shouldTrack() {
+      const localHosts = new Set(['localhost', '127.0.0.1', '::1']);
+      const editorPages = new Set(['/editor.html', '/mobile-editor.html']);
+      return location.protocol === 'https:' &&
+        !localHosts.has(location.hostname) &&
+        !editorPages.has(location.pathname) &&
+        navigator.doNotTrack !== '1';
+    },
+
+    visitorId() {
+      const storageKey = 'site-analytics-visitor-id';
+      try {
+        const existing = localStorage.getItem(storageKey);
+        if (existing) return existing;
+        const created = crypto.randomUUID ? crypto.randomUUID() : `visitor-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        localStorage.setItem(storageKey, created);
+        return created;
+      } catch (_) {
+        return `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      }
+    },
+
+    schedule() {
+      if (!this.shouldTrack() || window.__sitePageTracked) return;
+      const track = () => {
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(() => this.track(), { timeout: 2000 });
+        } else {
+          setTimeout(() => this.track(), 800);
+        }
+      };
+      if (document.readyState === 'complete') track();
+      else window.addEventListener('load', track, { once: true });
+    },
+
+    track() {
+      if (window.__sitePageTracked) return;
+      window.__sitePageTracked = true;
+      const pageUrl = `${location.origin}${location.pathname}${location.search}`;
+      fetch(this.endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          website_id: this.websiteId,
+          visitor_id: this.visitorId(),
+          page_url: pageUrl,
+          page_title: document.title,
+          referrer: document.referrer,
+          user_agent: navigator.userAgent
+        }),
+        keepalive: true,
+        credentials: 'omit'
+      }).catch(error => console.debug('Analytics request skipped:', error));
+    }
+  },
+
   // 通用初始化
   init() {
     this.theme.init();
     this.highlightNav();
     this.initMobileMenu();
     this.initBackToTop();
+    this.analytics.schedule();
   }
 };
 
