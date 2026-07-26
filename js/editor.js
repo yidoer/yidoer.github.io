@@ -759,6 +759,34 @@ const Editor = {
     input.click();
   },
 
+  importData() {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = '.json';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          let imported = 0;
+          if (data.articles) { this.data.articles = data.articles; imported++; }
+          if (data.notes) { this.data.notes = data.notes; imported++; }
+          if (imported) {
+            this.saveToStorage();
+            this.renderArticlesList();
+            this.renderNotesList();
+            this.showToast('数据已导入', 'success');
+          } else {
+            this.showToast('文件格式不正确', 'error');
+          }
+        } catch (err) { this.showToast('解析失败：' + err.message, 'error'); }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  },
+
   async resetData() {
     if (!confirm('确定要重置数据吗？这将丢弃所有未导出的修改。')) return;
     await this.loadFromFiles();
