@@ -501,6 +501,18 @@ const MobileEditor = {
     this.noteImages = [];
   },
 
+  async refreshPublishedData() {
+    const refreshed = await Editor.refreshPublishedData({ silent: true });
+    if (!refreshed) {
+      this.toast('刷新失败，请检查网络后重试', 'error');
+      return;
+    }
+    this.loadFromEditor();
+    this.renderArticlesList();
+    this.renderNotesList();
+    this.toast('已刷新已发布文章和小记', 'success');
+  },
+
   updatePendingStatus() {
     const el = document.getElementById('pending-images-status');
     if (el) el.textContent = `待发布图片：${Object.keys(Editor.imageCache).length} 张`;

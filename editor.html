@@ -51,6 +51,7 @@
       <div class="editor-panel active" id="panel-articles">
         <div class="editor-btn-group">
           <button class="editor-btn editor-btn-primary" onclick="Editor.newArticle()">+ 新建文章</button>
+          <button class="editor-btn editor-btn-secondary" onclick="Editor.refreshPublishedData()">↻ 刷新已发布内容</button>
         </div>
         <div class="editor-list" id="articles-list">
           <div class="empty-state">
@@ -64,6 +65,7 @@
       <div class="editor-panel" id="panel-notes">
         <div class="editor-btn-group">
           <button class="editor-btn editor-btn-primary" onclick="Editor.newNote()">+ 新建小记</button>
+          <button class="editor-btn editor-btn-secondary" onclick="Editor.refreshPublishedData()">↻ 刷新已发布内容</button>
         </div>
         <div class="editor-list" id="notes-list">
           <div class="empty-state">

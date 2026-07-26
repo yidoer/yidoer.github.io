@@ -2006,6 +2006,27 @@ select {
   min-height: 120px;
 }
 
+.comments-status {
+  margin: 12px 0;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+}
+
+.comments-status-error {
+  color: var(--text-secondary);
+}
+
+.comments-retry {
+  padding: 8px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--accent-color);
+  font-family: var(--font-sans);
+  cursor: pointer;
+}
+
 .note-link {
   display: block;
   color: inherit;

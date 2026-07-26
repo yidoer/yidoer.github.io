@@ -15,9 +15,7 @@ const Editor = {
   async init() {
     this.loadFromStorage();
     await this.loadPendingImages();
-    if (this.data.articles.length === 0 && this.data.notes.length === 0) {
-      await this.loadFromFiles();
-    }
+    await this.loadFromFiles({ silent: true });
     this.normalizeContentPaths();
     this.renderArticlesList();
     this.renderNotesList();
@@ -40,16 +38,40 @@ const Editor = {
     } catch (e) { console.error('Storage load error:', e); }
   },
 
-  async loadFromFiles() {
+  async loadFromFiles({ silent = false } = {}) {
     try {
-      const [ar, nr] = await Promise.all([
-        fetch('data/articles.json').then(r => r.json()).catch(() => ({ articles: [] })),
-        fetch('data/notes.json').then(r => r.json()).catch(() => ({ notes: [] }))
+      const requestOptions = { cache: 'no-store' };
+      const [articleResponse, noteResponse] = await Promise.all([
+        fetch('data/articles.json', requestOptions),
+        fetch('data/notes.json', requestOptions)
       ]);
-      this.data.articles = ar.articles || [];
-      this.data.notes = nr.notes || [];
-      this.saveToStorage();
-    } catch (e) { this.showToast('加载原始数据失败，请检查文件是否存在', 'error'); }
+      if (!articleResponse.ok || !noteResponse.ok) throw new Error('已发布数据请求失败');
+      const [articleData, noteData] = await Promise.all([articleResponse.json(), noteResponse.json()]);
+      this.mergeRemoteData(articleData.articles || [], noteData.notes || []);
+      if (!silent) this.showToast('已刷新已发布文章和小记', 'success');
+      return true;
+    } catch (error) {
+      console.error('Published data load error:', error);
+      if (!silent) this.showToast('刷新失败，请检查网络后重试', 'error');
+      return false;
+    }
+  },
+
+  mergeRemoteData(remoteArticles, remoteNotes) {
+    this.data.articles = this.mergePublishedItems(remoteArticles, this.data.articles, this.deleted.articles, this.dirty.articles);
+    this.data.notes = this.mergePublishedItems(remoteNotes, this.data.notes, this.deleted.notes, this.dirty.notes);
+    this.normalizeContentPaths();
+    this.saveToStorage();
+  },
+
+  async refreshPublishedData({ silent = false } = {}) {
+    const refreshed = this.projectDirHandle
+      ? await this.loadProjectData({ silent })
+      : await this.loadFromFiles({ silent });
+    if (!refreshed) return false;
+    this.renderArticlesList();
+    this.renderNotesList();
+    return true;
   },
 
   saveToStorage() {
@@ -385,7 +407,10 @@ const Editor = {
       await dataDirectory.getFileHandle('notes.json');
       this.projectDirHandle = handle;
       this.updateProjectStatus(true);
-      this.showToast('项目目录已连接，后续保存将自动写入', 'success');
+      await this.loadProjectData({ silent: true });
+      this.renderArticlesList();
+      this.renderNotesList();
+      this.showToast('项目目录已连接，并已读取已发布内容', 'success');
       return true;
     } catch (error) {
       if (error.name !== 'AbortError') {
@@ -410,6 +435,29 @@ const Editor = {
     return synced;
   },
 
+  async loadProjectData({ silent = false } = {}) {
+    if (!this.projectDirHandle) return false;
+    try {
+      const dataDirectory = await this.projectDirHandle.getDirectoryHandle('data');
+      const [articleHandle, noteHandle] = await Promise.all([
+        dataDirectory.getFileHandle('articles.json'),
+        dataDirectory.getFileHandle('notes.json')
+      ]);
+      const [articleFile, noteFile] = await Promise.all([articleHandle.getFile(), noteHandle.getFile()]);
+      const [articleData, noteData] = await Promise.all([
+        articleFile.text().then(JSON.parse),
+        noteFile.text().then(JSON.parse)
+      ]);
+      this.mergeRemoteData(articleData.articles || [], noteData.notes || []);
+      if (!silent) this.showToast('已从项目目录刷新文章和小记', 'success');
+      return true;
+    } catch (error) {
+      console.error('Project data load error:', error);
+      if (!silent) this.showToast('读取项目数据失败，请重新选择博客根目录', 'error');
+      return false;
+    }
+  },
+
   async writeProjectData({ silent = false } = {}) {
     try {
       if (!await this.ensureProjectAccess()) return false;
@@ -418,6 +466,8 @@ const Editor = {
       const dataDirectory = await this.projectDirHandle.getDirectoryHandle('data');
       await this.writeTextFile(dataDirectory, 'articles.json', JSON.stringify({ articles: this.data.articles }, null, 2) + '\n');
       await this.writeTextFile(dataDirectory, 'notes.json', JSON.stringify({ notes: this.data.notes }, null, 2) + '\n');
+      this.deleted = { articles: [], notes: [] };
+      this.dirty = { articles: [], notes: [] };
       this.saveToStorage();
       if (!silent) this.showToast('数据和图片已直接写入项目，无需复制粘贴', 'success');
       return true;
@@ -642,8 +692,10 @@ const Editor = {
   },
 
   mergePublishedItems(remoteItems, localItems, deletedIds, dirtyIds) {
-    const merged = new Map(remoteItems.filter(item => !deletedIds.includes(item.id)).map(item => [item.id, item]));
-    localItems.filter(item => dirtyIds.includes(item.id) || !merged.has(item.id)).forEach(item => merged.set(item.id, item));
+    const deleted = new Set(deletedIds || []);
+    const dirty = new Set(dirtyIds || []);
+    const merged = new Map((remoteItems || []).filter(item => !deleted.has(item.id)).map(item => [item.id, item]));
+    (localItems || []).filter(item => dirty.has(item.id) && !deleted.has(item.id)).forEach(item => merged.set(item.id, item));
     return [...merged.values()];
   },
 

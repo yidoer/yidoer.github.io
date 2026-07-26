@@ -354,28 +354,70 @@ const BlogApp = {
   // 初始化评论组件（Utterances，按文章 pathname 独立建帖）
   initComments() {
     const commentsContainer = document.getElementById('comments-container') || document.getElementById('giscus-container');
-    if (!commentsContainer || commentsContainer.dataset.loaded === 'true') return;
+    if (!commentsContainer || ['loading', 'true'].includes(commentsContainer.dataset.loaded)) return;
 
-    commentsContainer.dataset.loaded = 'true';
+    commentsContainer.dataset.loaded = 'loading';
+    commentsContainer.replaceChildren();
+    const status = document.createElement('p');
+    status.className = 'comments-status';
+    status.textContent = '正在加载评论...';
+    commentsContainer.appendChild(status);
+
     const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'github-dark' : 'github-light';
     const script = document.createElement('script');
     script.src = 'https://utteranc.es/client.js';
     script.setAttribute('repo', 'yidoer/yidoer.github.io');
-    script.setAttribute('issue-term', 'pathname');
-    script.setAttribute('label', 'comment');
+    script.setAttribute('issue-term', commentsContainer.dataset.issueTerm || 'pathname');
     script.setAttribute('theme', theme);
     script.setAttribute('crossorigin', 'anonymous');
     script.async = true;
-    commentsContainer.appendChild(script);
 
-    const observer = new MutationObserver(mutations => {
-      if (!mutations.some(mutation => mutation.attributeName === 'data-theme')) return;
-      const iframe = document.querySelector('iframe.utterances-frame');
-      if (!iframe) return;
-      const nextTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'github-dark' : 'github-light';
-      iframe.contentWindow.postMessage({ type: 'set-theme', theme: nextTheme }, 'https://utteranc.es');
+    let settled = false;
+    const finishLoading = () => {
+      const iframe = commentsContainer.querySelector('iframe.utterances-frame');
+      if (!iframe) return false;
+      settled = true;
+      commentsContainer.dataset.loaded = 'true';
+      status.remove();
+      return true;
+    };
+    const showLoadError = () => {
+      if (settled || finishLoading()) return;
+      settled = true;
+      commentsContainer.dataset.loaded = 'false';
+      commentsContainer.replaceChildren();
+      const message = document.createElement('p');
+      message.className = 'comments-status comments-status-error';
+      message.textContent = '评论服务加载失败，可能被网络或浏览器扩展拦截。';
+      const retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'comments-retry';
+      retry.textContent = '重新加载评论';
+      retry.addEventListener('click', () => {
+        commentsContainer.dataset.loaded = 'false';
+        this.initComments();
+      });
+      commentsContainer.append(message, retry);
+    };
+
+    const loadObserver = new MutationObserver(() => {
+      if (finishLoading()) loadObserver.disconnect();
     });
-    observer.observe(document.documentElement, { attributes: true });
+    loadObserver.observe(commentsContainer, { childList: true, subtree: true });
+    script.addEventListener('error', showLoadError, { once: true });
+    commentsContainer.appendChild(script);
+    setTimeout(showLoadError, 12000);
+
+    if (!this.commentsThemeObserver) {
+      this.commentsThemeObserver = new MutationObserver(mutations => {
+        if (!mutations.some(mutation => mutation.attributeName === 'data-theme')) return;
+        const iframe = document.querySelector('iframe.utterances-frame');
+        if (!iframe) return;
+        const nextTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'github-dark' : 'github-light';
+        iframe.contentWindow.postMessage({ type: 'set-theme', theme: nextTheme }, 'https://utteranc.es');
+      });
+      this.commentsThemeObserver.observe(document.documentElement, { attributes: true });
+    }
   },
 
   analytics: {
