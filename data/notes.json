@@ -2,15 +2,23 @@
   "notes": [
     {
       "id": "note-1",
-      "path": "/notes/2026/07/17/note-1/",
+      "path": "/notes/26/07/note-01/",
       "date": "2026-07-17",
-      "content": "从这里开始..."
+      "content": "从这里开始...",
+      "sequence": 1,
+      "legacyPaths": [
+        "/notes/2026/07/17/note-1/"
+      ]
     },
     {
       "id": "note-2",
-      "path": "/notes/2026/07/22/note-2/",
+      "path": "/notes/26/07/note-02/",
       "date": "2026-07-22",
-      "content": "# 神来之笔\n\n![1000036145.jpg](/images/uploads/2026/07/22/1000036145.jpg)\n\n周一拍的，有些漫画风。至于中间的几条黑线，它们其实是电线，你也可以当作我的镜头花了。"
+      "content": "# 神来之笔\n\n![1000036145.jpg](/images/uploads/2026/07/22/1000036145.jpg)\n\n周一拍的，有些漫画风。至于中间的几条黑线，它们其实是电线，你也可以当作我的镜头花了。",
+      "sequence": 2,
+      "legacyPaths": [
+        "/notes/2026/07/22/note-2/"
+      ]
     }
   ]
 }

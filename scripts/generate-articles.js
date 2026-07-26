@@ -22,6 +22,7 @@ for (const article of data.articles || []) {
 
   fs.mkdirSync(outputDirectory, { recursive: true });
   fs.writeFileSync(path.join(outputDirectory, 'index.html'), html);
+  for (const legacyPath of article.legacyPaths || []) writeRedirect(legacyPath, article.path);
 }
 
 console.log(`Generated ${(data.articles || []).length} article pages.`);
@@ -76,4 +77,12 @@ function escapeHtml(value) {
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;');
+}
+
+function writeRedirect(legacyPath, targetPath) {
+  if (!legacyPath.startsWith('/articles/') || legacyPath === targetPath) return;
+  const outputDirectory = path.join(root, ...legacyPath.split('/').filter(Boolean));
+  const target = escapeHtml(targetPath);
+  fs.mkdirSync(outputDirectory, { recursive: true });
+  fs.writeFileSync(path.join(outputDirectory, 'index.html'), `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=${target}"><link rel="canonical" href="https://yidoer.github.io${target}"><title>正在跳转</title></head><body><p><a href="${target}">前往新地址</a></p><script>location.replace(${JSON.stringify(targetPath)})<\/script></body></html>`);
 }

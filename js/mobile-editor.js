@@ -3,8 +3,10 @@ const MobileEditor = {
   currentId: null,
   articleImages: [],
   noteImages: [],
+  cursorPositions: { article: 0, note: 0 },
 
-  init() {
+  async init() {
+    await Editor.init();
     this.loadFromEditor();
     this.initTabs();
     this.initTheme();
@@ -13,7 +15,9 @@ const MobileEditor = {
     this.updatePendingStatus();
     this.initImageUploadAreas();
     this.initToolbar();
+    this.initCursorTracking();
     this.setDefaultDates();
+    this.hideFooter();
   },
 
   loadFromEditor() {
@@ -63,7 +67,6 @@ const MobileEditor = {
   },
 
   initToolbar() {
-    const toolbar = document.getElementById('m-article-toolbar');
     const actions = [
       { label: '<strong>B</strong>', title: '粗体', cmd: 'bold' },
       { label: '<em>I</em>', title: '斜体', cmd: 'italic' },
@@ -76,30 +79,65 @@ const MobileEditor = {
       { label: '{}', title: '代码', cmd: 'code' },
       { label: '—', title: '分隔线', cmd: 'hr' },
     ];
-    toolbar.innerHTML = actions.map(a => `<button type="button" class="mobile-toolbar-btn" title="${a.title}" onclick="MobileEditor.insertMarkdown('${a.cmd}')">${a.label}</button>`).join('');
+    for (const type of ['article', 'note']) {
+      const toolbar = document.getElementById(`m-${type}-toolbar`);
+      if (!toolbar) continue;
+      toolbar.innerHTML = actions.map(action => `<button type="button" class="mobile-toolbar-btn" title="${action.title}" onclick="MobileEditor.insertMarkdown('${action.cmd}', '${type}')">${action.label}</button>`).join('');
+    }
   },
 
-  insertMarkdown(type) {
-    const ta = document.getElementById('m-article-content');
-    if (!ta) return;
-    const s = ta.selectionStart, e = ta.selectionEnd;
-    const sel = ta.value.substring(s, e);
+  initCursorTracking() {
+    for (const type of ['article', 'note']) {
+      const textarea = this.contentTextarea(type);
+      if (!textarea) continue;
+      const remember = () => { this.cursorPositions[type] = textarea.selectionStart ?? textarea.value.length; };
+      ['focus', 'click', 'keyup', 'select', 'input'].forEach(event => textarea.addEventListener(event, remember));
+    }
+  },
+
+  contentTextarea(type) {
+    return document.getElementById(type === 'article' ? 'm-article-content' : 'm-note-content');
+  },
+
+  insertMarkdown(command, type = 'article') {
+    const textarea = this.contentTextarea(type);
+    if (!textarea) return;
+    const start = textarea.selectionStart ?? this.cursorPositions[type] ?? textarea.value.length;
+    const end = textarea.selectionEnd ?? start;
+    const selected = textarea.value.substring(start, end);
     let ins = '';
-    switch (type) {
-      case 'bold': ins = `**${sel || '粗体'}**`; break;
-      case 'italic': ins = `*${sel || '斜体'}*`; break;
-      case 'heading': ins = `\n## ${sel || '标题'}\n`; break;
-      case 'heading2': ins = `\n### ${sel || '标题'}\n`; break;
-      case 'quote': ins = `\n> ${sel || '引用'}\n`; break;
-      case 'list': ins = `\n- ${sel || '列表项'}\n- \n`; break;
-      case 'link': ins = `[${sel || '链接'}](https://)`; break;
-      case 'image': ins = `\n![${sel || '图片描述'}](${this.articleImages[0] || '图片URL'})\n`; break;
-      case 'code': ins = `\n\`\`\`\n${sel || '代码'}\n\`\`\``; break;
+    switch (command) {
+      case 'bold': ins = `**${selected || '粗体'}**`; break;
+      case 'italic': ins = `*${selected || '斜体'}*`; break;
+      case 'heading': ins = `\n## ${selected || '标题'}\n`; break;
+      case 'heading2': ins = `\n### ${selected || '标题'}\n`; break;
+      case 'quote': ins = `\n> ${selected || '引用'}\n`; break;
+      case 'list': ins = `\n- ${selected || '列表项'}\n- \n`; break;
+      case 'link': ins = `[${selected || '链接'}](https://)`; break;
+      case 'image': ins = `\n![${selected || '图片描述'}](图片URL)\n`; break;
+      case 'code': ins = `\n\`\`\`\n${selected || '代码'}\n\`\`\``; break;
       case 'hr': ins = `\n---\n`; break;
     }
-    ta.value = ta.value.substring(0, s) + ins + ta.value.substring(e);
-    ta.selectionStart = ta.selectionEnd = s + ins.length;
-    ta.focus();
+    this.insertAtCursor(type, ins, start, end);
+  },
+
+  insertAtCursor(type, text, start = this.cursorPositions[type], end = start) {
+    const textarea = this.contentTextarea(type);
+    if (!textarea) return;
+    const position = Number.isInteger(start) ? start : textarea.value.length;
+    const selectionEnd = Number.isInteger(end) ? end : position;
+    textarea.value = textarea.value.substring(0, position) + text + textarea.value.substring(selectionEnd);
+    const nextPosition = position + text.length;
+    textarea.selectionStart = textarea.selectionEnd = nextPosition;
+    this.cursorPositions[type] = nextPosition;
+    textarea.focus();
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+  },
+
+  chooseImages(type) {
+    const textarea = this.contentTextarea(type);
+    if (textarea) this.cursorPositions[type] = textarea.selectionStart ?? textarea.value.length;
+    document.getElementById(`m-${type}-image-input`).click();
   },
 
   initImageUploadAreas() {
@@ -136,10 +174,12 @@ const MobileEditor = {
         ? await Editor.writeImageFile(file, file.name, date)
         : await Editor.cacheImageFile(file, file.name, date);
       if (type === 'article') {
-        this.articleImages.push(imagePath);
+        if (!this.articleImages.includes(imagePath)) this.articleImages.push(imagePath);
+        this.insertImageMarkdown('article', imagePath, file.name);
         this.renderArticleImages();
       } else {
-        this.noteImages.push(imagePath);
+        if (!this.noteImages.includes(imagePath)) this.noteImages.push(imagePath);
+        this.insertImageMarkdown('note', imagePath, file.name);
         this.renderNoteImages();
       }
       const loc = Editor.projectDirHandle ? '项目目录' : '待发布区';
@@ -151,33 +191,75 @@ const MobileEditor = {
     }
   },
 
+  insertImageMarkdown(type, imagePath, alt = '图片') {
+    const safeAlt = alt.replace(/\.[^.]+$/, '').replaceAll(']', '');
+    this.insertAtCursor(type, `\n\n![${safeAlt}](${imagePath})\n\n`);
+  },
+
+  imagePreviewUrl(imagePath) {
+    const blob = Editor.imageCache[imagePath];
+    if (!blob) return imagePath;
+    if (!Editor.previewUrls[imagePath]) Editor.previewUrls[imagePath] = URL.createObjectURL(blob);
+    return Editor.previewUrls[imagePath];
+  },
+
   renderArticleImages() {
     const el = document.getElementById('m-article-images-preview');
-    el.innerHTML = this.articleImages.map((path, i) => `
-      <div class="mobile-image-thumb">
-        <img src="${path}" alt="图片${i+1}" loading="lazy">
-        <button type="button" onclick="MobileEditor.removeArticleImage(${i})">×</button>
+    el.innerHTML = this.articleImages.map((path, index) => `
+      <div class="mobile-image-item">
+        <button type="button" class="mobile-image-preview" onclick="MobileEditor.insertStoredImage('article', ${index})" title="插入到光标位置">
+          <img src="${this.imagePreviewUrl(path)}" alt="图片${index + 1}" loading="lazy">
+        </button>
+        <div class="mobile-image-actions">
+          <button type="button" onclick="MobileEditor.insertStoredImage('article', ${index})">插入</button>
+          <button type="button" class="danger" onclick="MobileEditor.removeArticleImage(${index})">移除</button>
+        </div>
       </div>
     `).join('');
   },
 
   renderNoteImages() {
     const el = document.getElementById('m-note-images-preview');
-    el.innerHTML = this.noteImages.map((path, i) => `
-      <div class="mobile-image-thumb">
-        <img src="${path}" alt="图片${i+1}" loading="lazy">
-        <button type="button" onclick="MobileEditor.removeNoteImage(${i})">×</button>
+    el.innerHTML = this.noteImages.map((path, index) => `
+      <div class="mobile-image-item">
+        <button type="button" class="mobile-image-preview" onclick="MobileEditor.insertStoredImage('note', ${index})" title="插入到光标位置">
+          <img src="${this.imagePreviewUrl(path)}" alt="图片${index + 1}" loading="lazy">
+        </button>
+        <div class="mobile-image-actions">
+          <button type="button" onclick="MobileEditor.insertStoredImage('note', ${index})">插入</button>
+          <button type="button" class="danger" onclick="MobileEditor.removeNoteImage(${index})">移除</button>
+        </div>
       </div>
     `).join('');
   },
 
-  removeArticleImage(i) {
-    this.articleImages.splice(i, 1);
+  insertStoredImage(type, index) {
+    const images = type === 'article' ? this.articleImages : this.noteImages;
+    const imagePath = images[index];
+    if (imagePath) this.insertImageMarkdown(type, imagePath);
+  },
+
+  async removeArticleImage(index) {
+    const [imagePath] = this.articleImages.splice(index, 1);
+    await this.removeImageFromEditor('article', imagePath);
     this.renderArticleImages();
   },
-  removeNoteImage(i) {
-    this.noteImages.splice(i, 1);
+
+  async removeNoteImage(index) {
+    const [imagePath] = this.noteImages.splice(index, 1);
+    await this.removeImageFromEditor('note', imagePath);
     this.renderNoteImages();
+  },
+
+  async removeImageFromEditor(type, imagePath) {
+    if (!imagePath) return;
+    const textarea = this.contentTextarea(type);
+    const escapedPath = imagePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const imagePattern = new RegExp(`\\n*!\\[[^\\]]*\\]\\(${escapedPath}\\)\\n*`, 'g');
+    textarea.value = textarea.value.replace(imagePattern, '\n\n').trim();
+    this.cursorPositions[type] = textarea.value.length;
+    await Editor.deletePendingImage(imagePath);
+    this.updatePendingStatus();
   },
 
   newArticle() {
@@ -191,6 +273,7 @@ const MobileEditor = {
     document.getElementById('m-article-tags').value = '';
     document.getElementById('m-article-excerpt').value = '';
     document.getElementById('m-article-content').value = '';
+    this.cursorPositions.article = 0;
     this.renderArticleImages();
     document.getElementById('article-modal').classList.add('active');
     this.showFooter('article');
@@ -209,6 +292,7 @@ const MobileEditor = {
     document.getElementById('m-article-tags').value = (art.tags || []).join(', ');
     document.getElementById('m-article-excerpt').value = art.excerpt || '';
     document.getElementById('m-article-content').value = art.content || '';
+    this.cursorPositions.article = (art.content || '').length;
     this.renderArticleImages();
     document.getElementById('article-modal').classList.add('active');
     this.showFooter('article');
@@ -226,6 +310,7 @@ const MobileEditor = {
     document.getElementById('note-modal-title').textContent = '新建小记';
     document.getElementById('m-note-date').value = new Date().toISOString().split('T')[0];
     document.getElementById('m-note-content').value = '';
+    this.cursorPositions.note = 0;
     this.renderNoteImages();
     document.getElementById('note-modal').classList.add('active');
     this.showFooter('note');
@@ -240,6 +325,7 @@ const MobileEditor = {
     document.getElementById('note-modal-title').textContent = '编辑小记';
     document.getElementById('m-note-date').value = note.date || '';
     document.getElementById('m-note-content').value = note.content || '';
+    this.cursorPositions.note = (note.content || '').length;
     this.renderNoteImages();
     document.getElementById('note-modal').classList.add('active');
     this.showFooter('note');
@@ -268,20 +354,20 @@ const MobileEditor = {
     const date = document.getElementById('m-article-date').value || new Date().toISOString().split('T')[0];
     const articleId = this.currentId || 'article-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
     const existing = Editor.data.articles.find(a => a.id === this.currentId);
-    const slug = Editor.slugify(title) || articleId;
-    let content = document.getElementById('m-article-content').value;
-    if (this.articleImages.length && !content.includes(this.articleImages[0])) {
-      content = this.articleImages.map(p => `\n\n![](${p})\n\n`).join('') + content;
-    }
+    const sequence = Editor.nextContentSequence('articles', date, this.currentId);
+    const articlePath = Editor.contentPath('articles', date, sequence);
+    const legacyPaths = Editor.contentLegacyPaths(existing, articlePath);
     const art = {
       id: articleId,
-      path: existing?.path || `/articles/${date.replaceAll('-', '/')}/${slug}/`,
+      path: articlePath,
+      sequence,
       title,
       date,
       category: document.getElementById('m-article-category').value.trim(),
       tags: document.getElementById('m-article-tags').value.split(',').map(t => t.trim()).filter(t => t),
       excerpt: document.getElementById('m-article-excerpt').value.trim(),
-      content
+      content: document.getElementById('m-article-content').value,
+      ...(legacyPaths.length ? { legacyPaths } : {})
     };
     if (this.currentId) {
       const idx = Editor.data.articles.findIndex(a => a.id === this.currentId);
@@ -303,15 +389,17 @@ const MobileEditor = {
     if (!content) { this.toast('请输入内容', 'error'); return; }
     const date = document.getElementById('m-note-date').value || new Date().toISOString().split('T')[0];
     const noteId = this.currentId || 'note-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-    let noteContent = content;
-    if (this.noteImages.length && !noteContent.includes(this.noteImages[0])) {
-      noteContent = this.noteImages.map(p => `\n\n![](${p})\n\n`).join('') + noteContent;
-    }
+    const existing = Editor.data.notes.find(note => note.id === this.currentId);
+    const sequence = Editor.nextContentSequence('notes', date, this.currentId);
+    const notePath = Editor.contentPath('notes', date, sequence);
+    const legacyPaths = Editor.contentLegacyPaths(existing, notePath);
     const note = {
       id: noteId,
-      path: `/notes/${date.replaceAll('-', '/')}/${noteId}/`,
+      path: notePath,
+      sequence,
       date,
-      content: noteContent
+      content,
+      ...(legacyPaths.length ? { legacyPaths } : {})
     };
     if (this.currentId) {
       const idx = Editor.data.notes.findIndex(n => n.id === this.currentId);
@@ -329,7 +417,8 @@ const MobileEditor = {
   },
 
   async deleteArticle(id) {
-    if (!confirm('确定删除这篇文章？')) return;
+    const article = Editor.data.articles.find(item => item.id === id);
+    if (!confirm(`确定删除文章「${article?.title || '未命名'}」？发布后将从网站移除。`)) return;
     Editor.data.articles = Editor.data.articles.filter(a => a.id !== id);
     if (!Editor.deleted.articles.includes(id)) Editor.deleted.articles.push(id);
     Editor.saveToStorage();
@@ -339,7 +428,8 @@ const MobileEditor = {
   },
 
   async deleteNote(id) {
-    if (!confirm('确定删除这条小记？')) return;
+    const note = Editor.data.notes.find(item => item.id === id);
+    if (!confirm(`确定删除 ${this.contentOrderLabel('notes', note)}？发布后将从网站移除。`)) return;
     Editor.data.notes = Editor.data.notes.filter(n => n.id !== id);
     if (!Editor.deleted.notes.includes(id)) Editor.deleted.notes.push(id);
     Editor.saveToStorage();
@@ -359,8 +449,9 @@ const MobileEditor = {
       <div class="mobile-list-item">
         <div class="mobile-list-item-header">
           <div class="mobile-list-item-title">${Editor.escapeHtml(art.title)}</div>
-          <span class="mobile-list-item-meta">${art.date}${art.category ? ' · ' + art.category : ''}</span>
+          <span class="mobile-list-item-meta">${this.contentOrderLabel('articles', art)}</span>
         </div>
+        <div class="mobile-list-item-path">${Editor.escapeHtml(art.path || '')}</div>
         <div class="mobile-list-item-content">${Editor.escapeHtml((art.excerpt || art.content || '').replace(/[#*`>\[\]!]/g, '').slice(0, 100))}</div>
         <div class="mobile-list-item-actions">
           <button class="mobile-btn mobile-btn-secondary" onclick="MobileEditor.editArticle('${art.id}')">编辑</button>
@@ -380,8 +471,10 @@ const MobileEditor = {
     el.innerHTML = notes.map(note => `
       <div class="mobile-list-item">
         <div class="mobile-list-item-header">
-          <div class="mobile-list-item-title">${note.date}</div>
+          <div class="mobile-list-item-title">${this.contentOrderLabel('notes', note)}</div>
+          <span class="mobile-list-item-meta">${note.date}</span>
         </div>
+        <div class="mobile-list-item-path">${Editor.escapeHtml(note.path || '')}</div>
         <div class="mobile-list-item-content">${Editor.escapeHtml(note.content.replace(/[#*`>\[\]!]/g, '').slice(0, 120))}</div>
         <div class="mobile-list-item-actions">
           <button class="mobile-btn mobile-btn-secondary" onclick="MobileEditor.editNote('${note.id}')">编辑</button>
@@ -389,6 +482,13 @@ const MobileEditor = {
         </div>
       </div>
     `).join('');
+  },
+
+  contentOrderLabel(type, item) {
+    if (!item) return type === 'articles' ? '文章' : '小记';
+    const [year, month] = Editor.contentMonth(item.date).split('-');
+    const sequence = Editor.contentSequence(item, type) || 1;
+    return `${year.slice(-2)}年${month}月第${sequence}篇${type === 'articles' ? '文章' : '小记'}`;
   },
 
   closeModal() {

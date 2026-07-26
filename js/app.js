@@ -261,14 +261,18 @@ const BlogApp = {
       return article.path.endsWith('/') ? article.path : `${article.path}/`;
     }
     const date = String(article.date || new Date().toISOString().slice(0, 10)).split('-');
-    const slug = (article.slug || article.id || 'article').toString().toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, '-').replace(/^-+|-+$/g, '');
-    return `/articles/${date[0]}/${date[1] || '01'}/${date[2] || '01'}/${slug}/`;
+    const sequence = String(article.sequence || 1).padStart(2, '0');
+    return `/articles/${String(date[0]).slice(-2)}/${date[1] || '01'}/article-${sequence}/`;
   },
 
   // 小记永久链接
   noteUrl(note) {
+    if (note.path && note.path.startsWith('/notes/')) {
+      return note.path.endsWith('/') ? note.path : `${note.path}/`;
+    }
     const date = String(note.date || new Date().toISOString().slice(0, 10)).split('-');
-    return `/notes/${date[0]}/${String(date[1] || '01').padStart(2, '0')}/${String(date[2] || '01').padStart(2, '0')}/${note.id || 'note'}/`;
+    const sequence = String(note.sequence || 1).padStart(2, '0');
+    return `/notes/${String(date[0]).slice(-2)}/${String(date[1] || '01').padStart(2, '0')}/note-${sequence}/`;
   },
 
   sortByDateDesc(items) {

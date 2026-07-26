@@ -18,6 +18,7 @@ const Editor = {
     if (this.data.articles.length === 0 && this.data.notes.length === 0) {
       await this.loadFromFiles();
     }
+    this.normalizeContentPaths();
     this.renderArticlesList();
     this.renderNotesList();
     this.initTabs();
@@ -132,16 +133,20 @@ const Editor = {
     const articleId = this.current.id || 'article-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
     const date = document.getElementById('article-date').value || new Date().toISOString().split('T')[0];
     const existingArticle = this.data.articles.find(article => article.id === this.current.id);
-    const slug = this.slugify(title) || articleId;
+    const sequence = this.nextContentSequence('articles', date, this.current.id);
+    const articlePath = this.contentPath('articles', date, sequence);
+    const legacyPaths = this.contentLegacyPaths(existingArticle, articlePath);
     const art = {
       id: articleId,
-      path: existingArticle?.path || `/articles/${date.replaceAll('-', '/')}/${slug}/`,
+      path: articlePath,
+      sequence,
       title,
       date,
       category: document.getElementById('article-category').value.trim(),
       tags: document.getElementById('article-tags').value.split(',').map(t => t.trim()).filter(t => t),
       excerpt: document.getElementById('article-excerpt').value.trim(),
-      content: document.getElementById('article-content').value
+      content: document.getElementById('article-content').value,
+      ...(legacyPaths.length ? { legacyPaths } : {})
     };
     if (this.current.id) {
       const idx = this.data.articles.findIndex(a => a.id === this.current.id);
@@ -224,11 +229,17 @@ const Editor = {
     if (!content) { this.showToast('请输入小记内容', 'error'); return; }
     const noteId = this.current.id || 'note-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
     const date = document.getElementById('note-date').value || new Date().toISOString().split('T')[0];
+    const existingNote = this.data.notes.find(note => note.id === this.current.id);
+    const sequence = this.nextContentSequence('notes', date, this.current.id);
+    const notePath = this.contentPath('notes', date, sequence);
+    const legacyPaths = this.contentLegacyPaths(existingNote, notePath);
     const note = {
       id: noteId,
-      path: `/notes/${date.replaceAll('-', '/')}/${noteId}/`,
+      path: notePath,
+      sequence,
       date,
-      content
+      content,
+      ...(legacyPaths.length ? { legacyPaths } : {})
     };
     if (this.current.id) {
       const idx = this.data.notes.findIndex(n => n.id === this.current.id);
@@ -522,6 +533,24 @@ const Editor = {
     Object.values(this.previewUrls).forEach(url => URL.revokeObjectURL(url));
     this.previewUrls = {};
     this.imageCache = {};
+    this.updatePendingImagesStatus();
+  },
+
+  async deletePendingImage(imagePath) {
+    if (!this.imageCache[imagePath]) return;
+    if (window.indexedDB) {
+      const database = await this.openImageDatabase();
+      await new Promise((resolve, reject) => {
+        const transaction = database.transaction('images', 'readwrite');
+        transaction.objectStore('images').delete(imagePath);
+        transaction.oncomplete = resolve;
+        transaction.onerror = () => reject(transaction.error);
+      });
+      database.close();
+    }
+    if (this.previewUrls[imagePath]) URL.revokeObjectURL(this.previewUrls[imagePath]);
+    delete this.previewUrls[imagePath];
+    delete this.imageCache[imagePath];
     this.updatePendingImagesStatus();
   },
 
@@ -822,6 +851,79 @@ const Editor = {
   },
 
   // ==================== 工具函数 ====================
+  normalizeContentPaths() {
+    let changed = false;
+    for (const type of ['articles', 'notes']) {
+      const used = new Map();
+      const items = [...this.data[type]].sort((first, second) => {
+        const dateOrder = String(first.date || '').localeCompare(String(second.date || ''));
+        return dateOrder || String(first.id || '').localeCompare(String(second.id || ''));
+      });
+      for (const item of items) {
+        const month = this.contentMonth(item.date);
+        if (!used.has(month)) used.set(month, new Set());
+        const monthSequences = used.get(month);
+        let sequence = this.contentSequence(item, type);
+        if (!sequence || monthSequences.has(sequence)) {
+          sequence = 1;
+          while (monthSequences.has(sequence)) sequence += 1;
+        }
+        monthSequences.add(sequence);
+        const nextPath = this.contentPath(type, item.date, sequence);
+        if (item.sequence !== sequence || item.path !== nextPath) {
+          const legacyPaths = this.contentLegacyPaths(item, nextPath);
+          item.sequence = sequence;
+          item.path = nextPath;
+          if (legacyPaths.length) item.legacyPaths = legacyPaths;
+          if (!this.dirty[type].includes(item.id)) this.dirty[type].push(item.id);
+          changed = true;
+        }
+      }
+    }
+    if (changed) this.saveToStorage();
+  },
+
+  nextContentSequence(type, date, currentId = null) {
+    const current = this.data[type].find(item => item.id === currentId);
+    const month = this.contentMonth(date);
+    if (current && this.contentMonth(current.date) === month) {
+      const existingSequence = this.contentSequence(current, type);
+      if (existingSequence) return existingSequence;
+    }
+    const sequences = this.data[type]
+      .filter(item => item.id !== currentId && this.contentMonth(item.date) === month)
+      .map(item => this.contentSequence(item, type))
+      .filter(Boolean);
+    return (sequences.length ? Math.max(...sequences) : 0) + 1;
+  },
+
+  contentSequence(item, type) {
+    const direct = Number.parseInt(item?.sequence, 10);
+    if (direct > 0) return direct;
+    const singular = type === 'articles' ? 'article' : 'note';
+    const pathMatch = String(item?.path || '').match(new RegExp(`/${singular}-(\\d+)/?$`));
+    if (pathMatch) return Number.parseInt(pathMatch[1], 10);
+    const idMatch = String(item?.id || '').match(new RegExp(`^${singular}-(\\d+)$`));
+    return idMatch ? Number.parseInt(idMatch[1], 10) : 0;
+  },
+
+  contentMonth(date) {
+    const safeDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : new Date().toISOString().split('T')[0];
+    return safeDate.slice(0, 7);
+  },
+
+  contentPath(type, date, sequence) {
+    const [year, month] = this.contentMonth(date).split('-');
+    const singular = type === 'articles' ? 'article' : 'note';
+    return `/${type}/${year.slice(-2)}/${month}/${singular}-${String(sequence).padStart(2, '0')}/`;
+  },
+
+  contentLegacyPaths(existing, nextPath) {
+    const paths = [...(existing?.legacyPaths || [])];
+    if (existing?.path && existing.path !== nextPath) paths.push(existing.path);
+    return [...new Set(paths)].filter(path => path && path !== nextPath);
+  },
+
   showToast(message, type = 'info') {
     let toast = document.getElementById('editor-toast');
     if (!toast) {
@@ -853,6 +955,7 @@ const Editor = {
 
 // ==================== 页面初始化 ====================
 document.addEventListener('DOMContentLoaded', () => {
+  if (document.body.classList.contains('mobile-editor-page')) return;
   Editor.init();
 
   // 点击模态框背景关闭
