@@ -281,7 +281,11 @@ const BlogApp = {
 
   // 格式化日期
   formatDate(dateStr) {
-    const date = new Date(dateStr);
+    const value = String(dateStr || '');
+    const isoDate = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoDate) return `${isoDate[1]}.${isoDate[2]}.${isoDate[3]}`;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -376,6 +380,12 @@ const BlogApp = {
     const finishLoading = () => {
       const iframe = commentsContainer.querySelector('iframe.utterances-frame');
       if (!iframe) return false;
+      iframe.loading = 'eager';
+      iframe.removeAttribute('loading');
+      const wrapper = iframe.closest('.utterances');
+      if (!wrapper) return false;
+      wrapper.style.minHeight = '220px';
+      if (!(Number.parseFloat(wrapper.style.height) > 0)) return false;
       settled = true;
       commentsContainer.dataset.loaded = 'true';
       status.remove();
@@ -403,7 +413,7 @@ const BlogApp = {
     const loadObserver = new MutationObserver(() => {
       if (finishLoading()) loadObserver.disconnect();
     });
-    loadObserver.observe(commentsContainer, { childList: true, subtree: true });
+    loadObserver.observe(commentsContainer, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
     script.addEventListener('error', showLoadError, { once: true });
     commentsContainer.appendChild(script);
     setTimeout(showLoadError, 12000);

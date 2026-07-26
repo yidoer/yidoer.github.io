@@ -2006,6 +2006,14 @@ select {
   min-height: 120px;
 }
 
+.comments-section .utterances {
+  min-height: 220px;
+}
+
+.comments-section .utterances-frame {
+  min-height: 220px;
+}
+
 .comments-status {
   margin: 12px 0;
   color: var(--text-muted);

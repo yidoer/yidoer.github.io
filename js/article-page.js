@@ -1,4 +1,5 @@
 (async function() {
+  BlogApp.initComments();
   const articleId = document.body.dataset.articleId;
   const header = document.getElementById('article-header');
   const content = document.getElementById('article-content');
@@ -26,7 +27,14 @@
 
   const meta = document.createElement('div');
   meta.className = 'article-meta';
-  meta.innerHTML = `<span>📅 ${BlogApp.formatDate(article.date)}</span><span>📁 ${article.category || '未分类'}</span><span>🏷️ ${(article.tags || []).join(', ') || '无标签'}</span>`;
+  const publishedDate = document.createElement('time');
+  publishedDate.dateTime = article.date || '';
+  publishedDate.textContent = `📅 ${BlogApp.formatDate(article.date)}`;
+  const category = document.createElement('span');
+  category.textContent = `📁 ${article.category || '未分类'}`;
+  const tags = document.createElement('span');
+  tags.textContent = `🏷️ ${(article.tags || []).join(', ') || '无标签'}`;
+  meta.append(publishedDate, category, tags);
 
   header.replaceChildren(title, meta);
   content.innerHTML = Markdown.parse(article.content);
@@ -48,5 +56,4 @@
     nextLink.hidden = true;
   }
 
-  BlogApp.initComments();
 })();
