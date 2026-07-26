@@ -545,6 +545,7 @@ const Editor = {
       button.textContent = '正在发布...';
     }
     try {
+      await this.migrateEmbeddedImages();
       await this.publishGitHubCommit(token);
       await this.clearPendingImages();
       this.deleted = { articles: [], notes: [] };
@@ -659,11 +660,16 @@ const Editor = {
         let content = item.content;
         for (const match of matches) {
           const blob = await fetch(match[2]).then(response => response.blob());
-          const imagePath = await this.writeImageFile(blob, `image.${match[3]}`, item.date || new Date().toISOString().split('T')[0]);
+          const date = item.date || new Date().toISOString().split('T')[0];
+          const imagePath = this.projectDirHandle
+            ? await this.writeImageFile(blob, `image.${match[3]}`, date)
+            : await this.cacheImageFile(blob, `image.${match[3]}`, date);
           content = content.replace(match[0], `![${match[1]}](${imagePath})`);
           migratedCount += 1;
         }
         item.content = content;
+        const type = this.data.articles.includes(item) ? 'articles' : 'notes';
+        if (!this.dirty[type].includes(item.id)) this.dirty[type].push(item.id);
       }
     }
     if (migratedCount) this.showToast(`已将 ${migratedCount} 张 Base64 图片迁移到 images/`, 'success');
