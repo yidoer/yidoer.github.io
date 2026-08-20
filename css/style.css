@@ -327,10 +327,11 @@ button,input,textarea,select{font:inherit}
   :root{--header-height:56px}
   .site-header{top:10px;left:.75rem;right:.75rem}
   .header-inner{min-height:50px;padding:5px 10px 5px 14px}
-  .nav-menu{display:none;position:absolute;top:calc(100% + 10px);left:0;right:0;background:var(--glass-strong-bg);border:1px solid var(--glass-border);border-radius:18px;padding:10px;flex-direction:column;gap:2px;box-shadow:var(--shadow-hover);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%)}
-  .nav-menu.show{display:flex}
-  .nav-menu a{width:100%;padding:11px 16px;border-radius:12px}
-  .menu-toggle{display:block}
+  .nav-menu{display:flex;align-items:center;gap:2px;min-width:0}
+  .nav-menu a{padding:7px 10px;font-size:.8rem;white-space:nowrap}
+  .menu-toggle{display:none}
+  .site-logo span{display:none}
+  .theme-toggle{width:34px;height:34px;margin-left:4px}
   .hero-title{font-size:clamp(1.9rem,9vw,2.4rem)}
   .hero-subtitle{font-size:1rem;letter-spacing:.14em}
   .hero-nav{gap:10px}
@@ -357,6 +358,9 @@ button,input,textarea,select{font:inherit}
 @media (max-width:480px){
   .hero-title{font-size:1.7rem}
   .hero-nav a{padding:8px 16px;font-size:.85rem}
+  .nav-menu a{padding:6px 8px;font-size:.75rem}
+  .logo-avatar{width:26px;height:26px}
+  .theme-toggle{width:32px;height:32px}
   .article-card-title{font-size:1.1rem}
   .article-card-excerpt{font-size:.9rem}
   .site-logo span{display:none}
@@ -408,3 +412,5 @@ button,input,textarea,select{font:inherit}
   --link-color:var(--accent);
   --link-hover:var(--accent-strong);
 }
+
+
