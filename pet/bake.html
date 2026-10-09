@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>毛绒蟹 · 烘焙</title>
+  <link rel="stylesheet" href="crab.css">
+  <link rel="stylesheet" href="pet.css">
+  <link rel="stylesheet" href="bake.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129408;</text></svg>">
+</head>
+<body class="bake">
+  <div class="stage" id="stage">
+    <canvas id="gl" aria-label="一只会动的毛绒蟹：可以拖拽、揉捏、折弯腿脚，让它横着走、挥爪或躲起来。" role="img"></canvas>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="fallback" id="fallback" hidden>
+      <div>
+        <span class="kicker">渲染不可用</span>
+        <h2 id="fallbackTitle">这只毛绒蟹需要 WebGPU。</h2>
+        <p id="fallbackDetail"></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="status" id="status" data-state="idle" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span id="statusText">毛绒蟹 · 启动中</span></div>
+
+  <aside class="panel" id="petbar" aria-label="毛绒蟹控制">
+    <div class="bar">
+      <span class="grip" aria-hidden="true"></span>
+      <div class="tools" role="group" aria-label="工具">
+        <button class="tool" type="button" data-tool="hand" aria-pressed="false" title="手：拖拽、揉捏、折弯">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 10V5.5a1.2 1.2 0 0 1 2.4 0V9m0-4.8V3.8a1.2 1.2 0 0 1 2.4 0V9m0-4.2a1.2 1.2 0 0 1 2.4 0V9.5m0-3a1.2 1.2 0 0 1 2.4 0V12c0 3.3-2.4 5.5-5.4 5.5-2.2 0-3.6-1-4.8-2.8L3.3 11.6a1.3 1.3 0 0 1 2-1.6L6 11"/></svg>
+          <span class="tip">手</span>
+        </button>
+        <button class="tool" type="button" data-tool="finger" aria-pressed="false" title="手指：让它爬过来捏一下">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8.2 11V3.6a1.4 1.4 0 0 1 2.8 0v6.2"/><path d="M11 8.6a1.3 1.3 0 0 1 2.6.2v1.6"/><path d="M13.6 9.6a1.3 1.3 0 0 1 2.6.3V13c0 2.6-2 4.6-4.6 4.6h-1c-1.9 0-3.2-.8-4.2-2.3L4.4 12.5a1.3 1.3 0 0 1 2.1-1.5L8.2 13"/></svg>
+          <span class="tip">手指</span>
+        </button>
+        <button class="tool" type="button" data-tool="comb" aria-pressed="false" title="梳子：把绒毛顺一遍">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 7.5h15v3h-15z"/><path d="M4 10.5v5M6.4 10.5v5M8.8 10.5v5M11.2 10.5v5M13.6 10.5v5M16 10.5v5"/></svg>
+          <span class="tip">梳子</span>
+        </button>
+      </div>
+      <div class="acts" role="group" aria-label="动作">
+        <button class="btn icon" id="scuttle" type="button" title="横着走一走">走</button>
+        <button class="btn icon" id="snip" type="button" title="咔嚓两下">剪</button>
+        <button class="btn icon" id="hide" type="button" title="缩起来躲一会儿">躲</button>
+        <button class="btn icon" id="wave" type="button" title="挥挥爪子">挥</button>
+      </div>
+      <button class="btn icon ghost" id="more" type="button" aria-expanded="false" aria-controls="sheet" title="更多设置">⋯</button>
+    </div>
+
+    <div class="sheet" id="sheet" hidden>
+      <div class="group">
+        <span class="label">毛色</span>
+        <div class="swatches" id="swatches" role="radiogroup" aria-label="毛色"></div>
+      </div>
+      <div class="group">
+        <div class="slider">
+          <div class="row"><label class="label" for="firmness">填充</label><output id="firmnessOut" for="firmness">0.45</output></div>
+          <input type="range" id="firmness" min="0" max="100" step="1" value="45">
+          <div class="ends"><span>松</span><span>紧</span></div>
+        </div>
+        <div class="slider">
+          <div class="row"><label class="label" for="furlen">绒毛</label><output id="furlenOut" for="furlen">6 mm</output></div>
+          <input type="range" id="furlen" min="0" max="100" step="1" value="45">
+          <div class="ends"><span>短</span><span>蓬</span></div>
+        </div>
+        <div class="slider">
+          <div class="row"><label class="label" for="tempo">骨架</label><output id="tempoOut" for="tempo">—</output></div>
+          <input type="range" id="tempo" min="0" max="100" step="1" value="50">
+          <div class="ends"><span>软</span><span>硬</span></div>
+        </div>
+      </div>
+      <div class="group">
+        <div class="checks">
+          <label class="check"><input type="checkbox" id="slow"><span class="box" aria-hidden="true"></span>慢速</label>
+          <label class="check"><input type="checkbox" id="mesh"><span class="box" aria-hidden="true"></span>网格</label>
+          <button class="btn small" id="straighten" type="button">理直腿脚</button>
+          <button class="btn small" id="smooth" type="button">抚平绒毛</button>
+        </div>
+        <div class="checks">
+          <button class="btn small" id="pause" type="button" aria-pressed="false">暂停</button>
+          <button class="btn small" id="reset" type="button">复位</button>
+        </div>
+      </div>
+      <div class="group">
+        <p class="hint" id="hintText"><b>手</b>把它捏起来揉一揉、抛一抛，或者折弯一条腿或爪——里面的铁丝会记住你留下的形状。</p>
+        <dl class="stats">
+          <div><dt class="label">质量</dt><dd>≈<span id="massOut">—</span><small>g</small></dd></div>
+          <div><dt class="label">体积</dt><dd><span id="volOut">—</span><small>% 静息</small></dd></div>
+          <div><dt class="label">步数</dt><dd><span id="stepOut">0</span></dd></div>
+          <div><dt class="label">剪</dt><dd><span id="snipOut">0</span></dd></div>
+        </dl>
+      </div>
+      <details class="notes">
+        <summary><span class="label">它是怎么动的</span></summary>
+        <div class="body">
+          <p>蟹身是一个符号距离场——压扁的圆顶壳、前缘一道软眉、两根短柄顶着圆眼睛——里面填着 <span class="num" id="nParticles">—</span> 个粒子和 <span class="num" id="nTets">—</span> 个四面体，用 XPBD 以固定 60 Hz、6 个子步求解：每个六面体格子被拉向它最贴合的旋转静止形状，而它的四面体守住填充物的体积。</p>
+          <p>八条腿和两只手臂是穿在壳里的铁丝，共 <span class="num" id="nLeg">—</span> 个质点。姿态把每个点拉向它的位置，髋部最牢、末端最松，所以肢体会保持形状又会晃。绒毛由 <span class="num" id="nShells">—</span> 层壳绘制。</p>
+        </div>
+      </details>
+    </div>
+  </aside>
+
+  <script type="module" src="crab.js"></script>
+  <script type="module" src="bake.js"></script>
+</body>
+</html>

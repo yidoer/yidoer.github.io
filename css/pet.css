@@ -1,0 +1,64 @@
+/* ---------- 桌面宠物 · 毛绒蟹 ----------
+   整张页面就是它的桌面：一块铺满视口的透明画布，没有任何工具条或卡片。
+   鼠标碰到它时才接管指针，页面其余地方照常点击、滚动。
+   浏览器没有 WebGPU 时退回精灵图版本。 */
+
+.pet-live {
+  position: fixed;
+  inset: 0;
+  z-index: 990;
+  pointer-events: none;
+}
+
+.pet-live canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  pointer-events: none;      /* 由脚本在指针真正碰到蟹时打开 */
+  opacity: 0;
+  transition: opacity .6s ease;
+}
+
+.pet-live.awake canvas { opacity: 1; }
+
+/* 抓到它的时候给一个自然的抓取光标 */
+.pet-live.touching canvas { cursor: grab; }
+
+.pet-live-ui { display: none !important; }
+
+/* ---------- 没有 WebGPU 时的精灵图版本 ---------- */
+.pet-sprite {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 128px;
+  height: 128px;
+  z-index: 990;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  will-change: transform;
+  filter: drop-shadow(0 6px 10px rgba(20 26 16 / .18));
+}
+
+.pet-sprite.dragging { cursor: grabbing; }
+
+.pet-sheet {
+  display: block;
+  width: 128px;
+  height: 128px;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  pointer-events: none;
+}
+
+@media (max-width: 900px), (max-height: 620px) {
+  .pet-live,
+  .pet-sprite { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pet-live canvas { transition: none; }
+}

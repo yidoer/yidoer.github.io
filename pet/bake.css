@@ -1,0 +1,17 @@
+// The bake page is a tool: it hides the workshop chrome and lets the crab own the frame.
+html, body.bake {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #f3f5ef;
+  color: #171a12;
+  font-family: system-ui, sans-serif;
+}
+body.bake .stage { position: fixed; inset: 0; }
+body.bake canvas { display: block; width: 100vw; height: 100vh; }
+body.bake .masthead,
+body.bake .panel,
+body.bake .readouts,
+body.bake .status,
+body.bake .toast { display: none !important; }
+body.bake .fallback { color: #171a12; }
