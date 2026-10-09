@@ -24,6 +24,7 @@
 
 /* 抓到它的时候给一个自然的抓取光标 */
 .pet-live.touching canvas { cursor: grab; }
+.pet-live.carrying canvas { cursor: grabbing; }
 
 .pet-live-ui { display: none !important; }
 

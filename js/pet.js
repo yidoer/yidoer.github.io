@@ -1,9 +1,11 @@
 /**
  * 桌面宠物 · 毛绒蟹
  *
- * 有 WebGPU：整张页面就是它的桌面——一块铺满视口的透明画布，没有卡片、没有工具条，
- * 蟹自己会在页面上溜达。直接上手就行：抓起来揉、掰腿、抛一抛，鼠标靠近它的眼睛会跟着你，
- * 点一下它会挥爪或咔嚓两下。
+ * 有 WebGPU：整张页面就是它的桌面——一块铺满视口的透明画布，没有卡片、没有工具条。
+ *  - 它自己会在整页走动：蟹的腿一动，屏幕上的位置就跟着挪；走累了歇一会儿再挑个新地方。
+ *  - 也可以直接拎起来：按住它拖到任意位置，松手就落在那里（拖着的时候会晃、会荡）。
+ *  - 鼠标靠近它的眼睛会跟着你转，点一下它会挥爪或咔嚓两下。
+ * 页面其余部分照常点击、滚动：指针只有在真正碰到它时才被接管。
  * 没有 WebGPU：退回一张会动的精灵图，只能看不能捏。
  *
  * 网址后缀可关掉：?pet=off（彻底不要） / ?pet=sprite（只要那张轻量精灵图）。
@@ -45,12 +47,13 @@
 
     var state = { name: 'idle', t: 0 }, walk = null, drag = null, next = 4 + Math.random() * 4;
     var sx = null, sy = null, last = performance.now();
-    function limit(v) { return Math.min(Math.max(v, 8), Math.max(8, window.innerWidth - SIZE - 8)); }
+    function limitX(v) { return Math.min(Math.max(v, 8), Math.max(8, window.innerWidth - SIZE - 8)); }
+    function limitY(v) { return Math.min(Math.max(v, 8), Math.max(8, window.innerHeight - SIZE - 8)); }
     function show(name, restart) { if (restart || state.name !== name) { state.name = name; state.t = 0; } }
     function render() {
       if (sx === null) sx = window.innerWidth - SIZE - 150;
       if (sy === null) sy = window.innerHeight - SIZE - 22;
-      sx = limit(sx); sy = Math.min(Math.max(sy, 8), Math.max(8, window.innerHeight - SIZE - 8));
+      sx = limitX(sx); sy = limitY(sy);
       el.style.transform = 'translate(' + Math.round(sx) + 'px,' + Math.round(sy) + 'px)';
     }
     function frame(now) {
@@ -61,7 +64,7 @@
       if (drag) return;
       if (walk) {
         var dx = walk.to - sx;
-        sx = limit(sx + Math.sign(dx) * Math.min(Math.abs(dx), walk.speed * dt));
+        sx = limitX(sx + Math.sign(dx) * Math.min(Math.abs(dx), walk.speed * dt));
         render();
         if (Math.abs(walk.to - sx) < 1) { walk = null; show('idle', true); next = 3 + Math.random() * 5; }
       } else if (reduce.matches) { show('idle'); state.t = 0; }
@@ -69,11 +72,11 @@
         next -= dt;
         if (next <= 0) {
           var roll = Math.random();
-          if (roll < 0.45) {
-            var to = limit(sx + (Math.random() < 0.5 ? -1 : 1) * (90 + Math.random() * Math.min(360, window.innerWidth * 0.4)));
-            if (Math.abs(to - sx) > 40) { walk = { to: to, speed: 26 + Math.random() * 16 }; show(to > sx ? 'walkR' : 'walkL', true); }
+          if (roll < 0.5) {
+            var to = limitX(sx + (Math.random() < 0.5 ? -1 : 1) * (120 + Math.random() * Math.min(420, window.innerWidth * 0.5)));
+            if (Math.abs(to - sx) > 40) { walk = { to: to, speed: 46 + Math.random() * 22 }; show(to > sx ? 'walkR' : 'walkL', true); }
           }
-          if (!walk) { show(roll < 0.72 ? 'wave' : roll < 0.9 ? 'snip' : 'hide', true); next = 4 + Math.random() * 5; }
+          if (!walk) { show(roll < 0.74 ? 'wave' : roll < 0.9 ? 'snip' : 'hide', true); next = 4 + Math.random() * 5; }
         }
       }
       var spec = rows[state.name];
@@ -133,69 +136,107 @@
     document.body.appendChild(host);
     document.body.classList.add('pet-free');
 
-    // the page is the crab's desktop: one full-viewport transparent canvas
+    // 页面就是它的桌面：一块铺满视口的透明画布，蟹站在其中一个方块里
     var stage = { x: 0, y: 0, w: SW, h: SH };
     window.__crabStage = stage;
-    function settle(first) {
-      if (first) {
-        stage.x = window.innerWidth - SW - 34;
-        stage.y = window.innerHeight - SH - 18;
-      }
-      stage.x = Math.min(Math.max(stage.x, 8), Math.max(8, window.innerWidth - SW - 8));
-      stage.y = Math.min(Math.max(stage.y, 72), Math.max(72, window.innerHeight - SH - 8));
-    }
 
     var canvas = host.querySelector('#gl');
-    var crab = null, moving = null, idle = 4 + Math.random() * 5, held = false;
+    var crab = null;
+    var move = null;          // 屏幕上的位移补间
+    var carry = null;         // 正被拎着
+    var idle = 3 + Math.random() * 4;
+    var seenGoal = null;      // 蟹自己决定要走去哪儿时，把这段路也搬到屏幕上
+
+    function limitX(v) { return Math.min(Math.max(v, 8), Math.max(8, window.innerWidth - SW - 8)); }
+    function limitY(v) { return Math.min(Math.max(v, 72), Math.max(72, window.innerHeight - SH - 8)); }
+    function settle(first) {
+      if (first) { stage.x = window.innerWidth - SW - 34; stage.y = window.innerHeight - SH - 18; }
+      stage.x = limitX(stage.x); stage.y = limitY(stage.y);
+    }
+
+    // 走一段：屏幕上从当前位置滑到 (tx,ty)，同时让它的腿真的在走
+    function startMove(tx, ty, dur, alreadyWalking) {
+      tx = limitX(tx); ty = limitY(ty);
+      var dx = tx - stage.x, dy = ty - stage.y;
+      var dist = Math.hypot(dx, dy);
+      if (dist < 30) return false;
+      move = { fx: stage.x, fy: stage.y, dx: dx, dy: dy, t: 0, dur: Math.max(1.2, dur) };
+      if (!alreadyWalking && crab) {
+        // 世界里的目标按它能走到的距离给，免得腿停了屏幕还在滑
+        var world = Math.min(4.5, 0.62 * move.dur);
+        crab.walkTo([dx / dist * world, 0, dy / dist * world], move.dur);
+      }
+      return true;
+    }
+
+    function wander() {
+      if (!crab || reduce.matches || move || carry) return;
+      var m = 26;
+      var tx = m + Math.random() * Math.max(1, window.innerWidth - SW - m * 2);
+      var ty = 80 + Math.random() * Math.max(1, window.innerHeight - SH - 96);
+      tx = 26 + Math.random() * Math.max(1, window.innerWidth - SW - 52);
+      var dist = Math.hypot(tx - stage.x, ty - stage.y);
+      if (dist < 140) return;
+      startMove(tx, ty, Math.min(9, dist / 120));
+      idle = 3 + Math.random() * 5;
+    }
+
+    // 它自己迈腿（闲着慌、或者被你用手指逗）时，屏幕上也跟着挪一段
+    function mirrorOwnWalk() {
+      if (!crab || move || carry) return;
+      var g = crab.gait.goal;
+      if (!g) { seenGoal = null; return; }
+      if (g === seenGoal) return;
+      seenGoal = g;
+      if (!crab.gait.walking) return;
+      var c = crab.sim.centroid();
+      var dx = g[0] - c[0], dz = g[1] - c[2];
+      var len = Math.hypot(dx, dz);
+      if (len < 0.1) return;
+      // 它一步只挪很短一段，映射成屏幕上的一小窜
+      var px = Math.max(-320, Math.min(320, dx * 170 + (dx / len) * 60));
+      var py = Math.max(-240, Math.min(240, dz * 170 + (dz / len) * 60));
+      startMove(stage.x + px, stage.y + py, Math.max(1.8, len * 2.6), true);
+    }
 
     // ── 指针只在真正碰到蟹的时候才交给它，页面其余地方照常点击 ──
     function over(ev) {
-      if (!crab || held) return false;
+      if (!crab) return false;
       if (ev.clientX < stage.x || ev.clientX > stage.x + stage.w) return false;
       if (ev.clientY < stage.y || ev.clientY > stage.y + stage.h) return false;
       try {
         var ray = crab.rayFrom(ev.clientX, ev.clientY);
         if (crab.pick(ray) || Number.isFinite(crab.pickLeg(ray))) return true;
       } catch (_) { /* fall through to the body oval */ }
-      // while it is walking the exact silhouette shifts between frames, so the body itself stays
-      // grabbable: a wide, flat oval over the shell, leaving the corners clickable
+      // 走动时轮廓逐帧在变，给身体留一个宽扁的椭圆，四角仍然放行给页面
       var ox = (ev.clientX - (stage.x + stage.w / 2)) / (stage.w * 0.44);
       var oy = (ev.clientY - (stage.y + stage.h * 0.54)) / (stage.h * 0.3);
       return ox * ox + oy * oy <= 1;
     }
     window.addEventListener('pointermove', function (e) {
+      if (carry) { carry.x = e.clientX; carry.y = e.clientY; return; }
       var hit = over(e);
       canvas.style.pointerEvents = hit ? 'auto' : 'none';
       host.classList.toggle('touching', hit);
     }, { passive: true });
 
-    // ── 它自己会在页面上溜达 ──
-    function wander(force) {
-      if (reduce.matches || moving || !crab || held) return;
-      var m = 20;
-      var tx = m + Math.random() * Math.max(1, window.innerWidth - SW - m * 2);
-      var ty = window.innerHeight * 0.28 + Math.random() * Math.max(1, window.innerHeight * 0.72 - SH - m);
-      var dx = tx - stage.x, dy = ty - stage.y;
-      var dist = Math.hypot(dx, dy);
-      if (!force && dist < 140) return;
-      var dur = Math.min(10, Math.max(1.8, dist / 68));
-      moving = { from: { x: stage.x, y: stage.y }, dx: dx, dy: dy, t: 0, dur: dur };
-      crab.walkTo([dx * 0.004, 0, dy * 0.004], dur);
-      idle = 5 + Math.random() * 7;
-    }
-
-    // ── 抓在手里的时候，整只蟹跟着指针走 ──
-    canvas.addEventListener('pointerdown', function () { held = true; host.classList.add('touching'); });
+    // ── 拎起来：按住它就能拖到页面任意位置 ──
+    canvas.addEventListener('pointerdown', function (e) {
+      if (!over(e)) return;
+      move = null;
+      carry = { x: e.clientX, y: e.clientY, ox: e.clientX - (stage.x + stage.w / 2), oy: e.clientY - (stage.y + stage.h * 0.54) };
+      host.classList.add('carrying');
+      canvas.style.pointerEvents = 'auto';
+    });
     function drop() {
-      if (!held) return;
-      held = false;
-      host.classList.remove('touching', 'grabbing');
-      idle = 4 + Math.random() * 4;
+      if (!carry) return;
+      carry = null;
+      host.classList.remove('carrying');
+      idle = 3 + Math.random() * 4;
     }
     window.addEventListener('pointerup', drop);
     window.addEventListener('pointercancel', drop);
     window.addEventListener('blur', drop);
-
     window.addEventListener('resize', function () { settle(false); });
 
     import(MODULE_URL).catch(function (err) {
@@ -213,21 +254,33 @@
         crab.setQuality(2);   // full-viewport canvas: keep the fill rate sane
         host.classList.add('awake');
         clearInterval(poll);
+
         var last = performance.now();
         (function tick(now) {
           requestAnimationFrame(tick);
           if (document.hidden) { last = now; return; }
           var dt = Math.min((now - last) / 1000, 0.1); last = now;
-          if (moving) {
-            moving.t += dt;
-            var k = Math.min(1, moving.t / moving.dur);
-            var e = k * k * (3 - 2 * k);
-            stage.x = moving.from.x + moving.dx * e;
-            stage.y = moving.from.y + moving.dy * e;
-            if (k >= 1) { moving = null; idle = 5 + Math.random() * 7; }
-          } else if (!reduce.matches && !held) {
-            idle -= dt;
-            if (idle <= 0) wander(false);
+
+          if (carry) {
+            // 追着指针走，但留一点滞后，这样它会被拎着晃、腿在半空蹬
+            var wantX = carry.x - carry.ox - stage.w / 2;
+            var wantY = carry.y - carry.oy - stage.h * 0.54;
+            var k = Math.min(1, dt * 7);
+            stage.x = limitX(stage.x + (wantX - stage.x) * k);
+            stage.y = limitY(stage.y + (wantY - stage.y) * k);
+          } else if (move) {
+            move.t += dt;
+            var u = Math.min(1, move.t / move.dur);
+            var e2 = u * u * (3 - 2 * u);
+            stage.x = limitX(move.fx + move.dx * e2);
+            stage.y = limitY(move.fy + move.dy * e2);
+            if (u >= 1) { move = null; idle = 3 + Math.random() * 5; }
+          } else if (crab) {
+            mirrorOwnWalk();
+            if (!reduce.matches) {
+              idle -= dt;
+              if (idle <= 0) { wander(); idle = 3 + Math.random() * 5; }
+            }
           }
         })(last);
         return;
