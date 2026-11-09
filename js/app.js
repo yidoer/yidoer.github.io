@@ -1,203 +1,4 @@
-/**
- * 轻量 Markdown 解析器
- * 支持常见语法，无需外部依赖
- */
-const Markdown = {
-  parse(text) {
-    if (!text) return '';
-    let html = text;
-
-    // 转义 HTML 特殊字符
-    html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-    // 代码块 (```lang\ncode\n```)
-    html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
-      const langClass = lang ? ` class="language-${lang}"` : '';
-      return `<pre><code${langClass}>${code.trim()}</code></pre>`;
-    });
-
-    // 行内代码 (`code`)
-    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-    // 分隔线
-    html = html.replace(/^[\s]*(-{3,}|\*{3,}|_{3,})[\s]*$/gm, '<hr>');
-
-    // 标题
-    html = html.replace(/^######\s+(.*)$/gm, '<h6>$1</h6>');
-    html = html.replace(/^#####\s+(.*)$/gm, '<h5>$1</h5>');
-    html = html.replace(/^####\s+(.*)$/gm, '<h4>$1</h4>');
-    html = html.replace(/^###\s+(.*)$/gm, '<h3>$1</h3>');
-    html = html.replace(/^##\s+(.*)$/gm, '<h2>$1</h2>');
-    html = html.replace(/^#\s+(.*)$/gm, '<h1>$1</h1>');
-
-    // 粗体 + 斜体
-    html = html.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
-    html = html.replace(/___([^_]+)___/g, '<strong><em>$1</em></strong>');
-
-    // 粗体
-    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
-
-    // 斜体
-    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-    html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
-
-    // 删除线
-    html = html.replace(/~~([^~]+)~~/g, '<del>$1</del>');
-
-    // 图片 ![alt](url)
-    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy" decoding="async">');
-
-    // 链接 [text](url)，必须在图片之后处理，避免把图片语法误解析成链接
-    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-
-    // 引用
-    const lines = html.split('\n');
-    let inQuote = false;
-    let quoteLines = [];
-    const processed = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const quoteMatch = line.match(/^\>\s?(.*)$/);
-      if (quoteMatch) {
-        if (!inQuote) {
-          inQuote = true;
-          quoteLines = [quoteMatch[1]];
-        } else {
-          quoteLines.push(quoteMatch[1]);
-        }
-      } else {
-        if (inQuote) {
-          processed.push(`<blockquote>\n${quoteLines.join('\n')}\n</blockquote>`);
-          inQuote = false;
-          quoteLines = [];
-        }
-        processed.push(line);
-      }
-    }
-    if (inQuote) {
-      processed.push(`<blockquote>\n${quoteLines.join('\n')}\n</blockquote>`);
-    }
-    html = processed.join('\n');
-
-    // 无序列表
-    const listProcessed = [];
-    let inList = false;
-    let listItems = [];
-    let listType = '';
-
-    const listLines = html.split('\n');
-    for (let i = 0; i < listLines.length; i++) {
-      const line = listLines[i];
-      const ulMatch = line.match(/^[\s]*[-\*\+]\s+(.*)$/);
-      const olMatch = line.match(/^[\s]*\d+\.\s+(.*)$/);
-
-      if (ulMatch) {
-        if (!inList || listType !== 'ul') {
-          if (inList) {
-            listProcessed.push(`</${listType}>`);
-          }
-          listProcessed.push('<ul>');
-          inList = true;
-          listType = 'ul';
-        }
-        listProcessed.push(`<li>${ulMatch[1]}</li>`);
-      } else if (olMatch) {
-        if (!inList || listType !== 'ol') {
-          if (inList) {
-            listProcessed.push(`</${listType}>`);
-          }
-          listProcessed.push('<ol>');
-          inList = true;
-          listType = 'ol';
-        }
-        listProcessed.push(`<li>${olMatch[1]}</li>`);
-      } else if (line.trim() === '' && inList) {
-        // 空行结束列表
-        listProcessed.push(`</${listType}>`);
-        inList = false;
-        listType = '';
-        listProcessed.push(line);
-      } else {
-        if (inList && line.trim() !== '') {
-          // 列表中的延续行
-          listProcessed.push(`<li>${line.trim()}</li>`);
-        } else {
-          if (inList) {
-            listProcessed.push(`</${listType}>`);
-            inList = false;
-            listType = '';
-          }
-          listProcessed.push(line);
-        }
-      }
-    }
-    if (inList) {
-      listProcessed.push(`</${listType}>`);
-    }
-    html = listProcessed.join('\n');
-
-    // 表格
-    html = html.replace(/(?:^\|([^\n]+)\|[\s]*\n)(?:^\|[-:\|\s]+\|[\s]*\n)((?:^\|[^\n]+\|[\s]*\n)*)/gm, (match, header, rows) => {
-      const headers = header.split('|').map(h => h.trim()).filter(h => h);
-      const headerHtml = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>`;
-      const rowLines = rows.trim().split('\n').filter(l => l.trim());
-      const bodyHtml = `<tbody>${rowLines.map(line => {
-        const cells = line.split('|').map(c => c.trim()).filter(c => c);
-        return `<tr>${cells.map(c => `<td>${c}</td>`).join('')}</tr>`;
-      }).join('')}</tbody>`;
-      return `<table>${headerHtml}${bodyHtml}</table>`;
-    });
-
-    // 段落
-    const paraLines = html.split('\n');
-    const paraProcessed = [];
-    let currentPara = [];
-
-    for (const line of paraLines) {
-      const trimmed = line.trim();
-      if (trimmed === '') {
-        if (currentPara.length > 0) {
-          const paraContent = currentPara.join(' ').replace(/\s+/g, ' ');
-          if (!paraContent.match(/^<(h[1-6]|blockquote|ul|ol|pre|table|hr)/)) {
-            paraProcessed.push(`<p>${paraContent}</p>`);
-          } else {
-            paraProcessed.push(paraContent);
-          }
-          currentPara = [];
-        }
-      } else if (trimmed.match(/^<(h[1-6]|blockquote|ul|ol|pre|table|li|hr)/)) {
-        if (currentPara.length > 0) {
-          const paraContent = currentPara.join(' ').replace(/\s+/g, ' ');
-          if (!paraContent.match(/^<(h[1-6]|blockquote|ul|ol|pre|table|hr)/)) {
-            paraProcessed.push(`<p>${paraContent}</p>`);
-          } else {
-            paraProcessed.push(paraContent);
-          }
-          currentPara = [];
-        }
-        paraProcessed.push(line);
-      } else {
-        currentPara.push(line);
-      }
-    }
-    if (currentPara.length > 0) {
-      const paraContent = currentPara.join(' ').replace(/\s+/g, ' ');
-      if (!paraContent.match(/^<(h[1-6]|blockquote|ul|ol|pre|table|hr)/)) {
-        paraProcessed.push(`<p>${paraContent}</p>`);
-      } else {
-        paraProcessed.push(paraContent);
-      }
-    }
-    html = paraProcessed.join('\n');
-
-    // 清理多余的空行
-    html = html.replace(/\n{3,}/g, '\n\n');
-
-    return html.trim();
-  }
-};
+/* Markdown 解析器见 js/markdown.js（浏览器与 Node 共用同一份实现） */
 
 /**
  * 博客应用核心逻辑
@@ -299,6 +100,61 @@ const BlogApp = {
     return str.slice(0, maxLen) + '…';
   },
 
+  // HTML 转义：拼接 innerHTML 前必须处理，避免标题/标签里的尖括号破坏结构
+  escapeHtml(text) {
+    return String(text ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
+  // 空状态占位
+  emptyStateHtml(icon, text) {
+    return `<div class="empty-state"><div class="empty-state-icon">${icon}</div><p class="empty-state-text">${this.escapeHtml(text)}</p></div>`;
+  },
+
+  // 文章卡片：首页最新文章、文章列表页共用
+  articleCardHtml(article, index = 0) {
+    const delay = Math.min(index + 1, 4);
+    const tags = (article.tags || [])
+      .map(tag => `<span class="article-tag">${this.escapeHtml(tag)}</span>`)
+      .join('');
+    return `<a href="${this.escapeHtml(this.articleUrl(article))}" class="article-card fade-in fade-in-delay-${delay}">
+              <div class="article-card-header">
+                <span class="article-date">${this.escapeHtml(this.formatDate(article.date))}</span>
+                <span class="article-category">${this.escapeHtml(article.category || '未分类')}</span>
+              </div>
+              <h3 class="article-card-title">${this.escapeHtml(article.title)}</h3>
+              <p class="article-card-excerpt">${this.escapeHtml(this.truncate(article.excerpt || '', 80))}</p>
+              <div class="article-card-tags">${tags}</div>
+            </a>`;
+  },
+
+  // 小记卡片：首页最新小记、小记列表页共用
+  noteCardHtml(note, index = 0) {
+    const delay = Math.min(index + 1, 4);
+    return `<a href="${this.escapeHtml(this.noteUrl(note))}" class="note-item note-link fade-in fade-in-delay-${delay}">
+              <div class="note-date">${this.escapeHtml(this.formatDate(note.date))}</div>
+              <div class="note-content">${this.escapeHtml(this.truncate(note.content, 80))}</div>
+              <span class="note-comment-link">查看与评论 →</span>
+            </a>`;
+  },
+
+  // 分页：articles.html / notes.html 共用
+  renderPagination({ totalPages, currentPage, pagination, pageInfo, prevBtn, nextBtn }) {
+    if (!pagination || !pageInfo || !prevBtn || !nextBtn) return;
+    if (totalPages > 1) {
+      pagination.style.display = 'flex';
+      pageInfo.textContent = `${currentPage} / ${totalPages}`;
+      prevBtn.disabled = currentPage <= 1;
+      nextBtn.disabled = currentPage >= totalPages;
+    } else {
+      pagination.style.display = 'none';
+    }
+  },
+
   // 导航高亮
   highlightNav() {
     const pathname = window.location.pathname;
@@ -315,23 +171,6 @@ const BlogApp = {
         link.classList.remove('active');
       }
     });
-  },
-
-  // 移动端菜单
-  initMobileMenu() {
-    const menuToggle = document.getElementById('menu-toggle');
-    const navMenu = document.getElementById('nav-menu');
-    if (menuToggle && navMenu) {
-      menuToggle.addEventListener('click', () => {
-        navMenu.classList.toggle('show');
-      });
-      // 点击菜单项后关闭菜单
-      navMenu.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-          navMenu.classList.remove('show');
-        });
-      });
-    }
   },
 
   // 返回顶部
@@ -476,7 +315,6 @@ const BlogApp = {
   init() {
     this.theme.init();
     this.highlightNav();
-    this.initMobileMenu();
     this.initBackToTop();
     this.analytics.load();
   }

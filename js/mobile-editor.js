@@ -49,15 +49,19 @@ const MobileEditor = {
 
   initTheme() {
     const toggle = document.getElementById('theme-toggle');
-    const saved = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', saved);
-    toggle.textContent = saved === 'dark' ? '☀' : '☾';
-    toggle.onclick = () => {
-      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    if (!toggle) return;
+    // 本页不加载 app.js，故就地实现；存储键与公开页面的 BlogApp.theme 保持一致（blog-theme）
+    const apply = theme => {
       document.documentElement.setAttribute('data-theme', theme);
-      localStorage.setItem('theme', theme);
       toggle.textContent = theme === 'dark' ? '☀' : '☾';
+      toggle.title = theme === 'dark' ? '切换到浅色模式' : '切换到深色模式';
     };
+    apply(localStorage.getItem('blog-theme') || 'light');
+    toggle.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('blog-theme', next);
+      apply(next);
+    });
   },
 
   setDefaultDates() {

@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# 编辑后台无需被索引
+Disallow: /editor.html
+Disallow: /mobile-editor.html
+
+Sitemap: https://yidoer.github.io/sitemap.xml
+
+# RSS / Atom 订阅源
+# feed.xml       全部内容（文章 + 小记）
+# feed-notes.xml 仅小记
+# feed-atom.xml  仅文章（Atom 1.0）

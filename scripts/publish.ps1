@@ -36,8 +36,11 @@ if ($Type -eq 'article') {
   }
   $data.articles = @($data.articles) + $article
   $data | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $dataPath -Encoding utf8
-  Copy-Item -LiteralPath $dataPath -Destination (Join-Path $root 'articles.json') -Force
+  & node (Join-Path $root 'scripts\validate-data.js')
+  if ($LASTEXITCODE -ne 0) { throw '数据校验失败，已中止发布。' }
   & node (Join-Path $root 'scripts\generate-articles.js')
+  & node (Join-Path $root 'scripts\generate-sitemap.js')
+  & node (Join-Path $root 'scripts\generate-feed.js')
   Write-Output "文章已生成：$($article.path)"
 } else {
   $dataPath = Join-Path $root 'data\notes.json'
@@ -51,6 +54,10 @@ if ($Type -eq 'article') {
   }
   $data.notes = @($data.notes) + $note
   $data | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $dataPath -Encoding utf8
+  & node (Join-Path $root 'scripts\validate-data.js')
+  if ($LASTEXITCODE -ne 0) { throw '数据校验失败，已中止发布。' }
   & node (Join-Path $root 'scripts\generate-notes.js')
+  & node (Join-Path $root 'scripts\generate-sitemap.js')
+  & node (Join-Path $root 'scripts\generate-feed.js')
   Write-Output "小记已生成：$($note.path)"
 }

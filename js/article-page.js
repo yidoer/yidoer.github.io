@@ -38,7 +38,7 @@
 
   header.replaceChildren(title, meta);
   content.innerHTML = Markdown.parse(article.content);
-  navigation.style.display = 'flex';
+  navigation.hidden = false;
 
   if (currentIndex > 0) {
     const previousArticle = sortedArticles[currentIndex - 1];

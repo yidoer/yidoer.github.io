@@ -32,10 +32,18 @@ jobs:
         with:
           node-version: 20
 
+      - name: Validate data files
+        run: node scripts/validate-data.js
+
       - name: Generate content pages
         run: |
           node scripts/generate-articles.js
           node scripts/generate-notes.js
+          node scripts/generate-sitemap.js
+          node scripts/generate-feed.js
+
+      - name: Validate feeds
+        run: node scripts/check-feeds.js
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

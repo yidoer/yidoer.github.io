@@ -18,6 +18,7 @@ for (const article of data.articles || []) {
     .replaceAll('__ID__', escapeHtml(article.id))
     .replaceAll('__TITLE__', escapeHtml(article.title))
     .replaceAll('__DESCRIPTION__', escapeHtml(article.excerpt || article.title))
+    .replaceAll('__DATE__', escapeHtml(article.date || ''))
     .replaceAll('__PATH__', article.path);
 
   fs.mkdirSync(outputDirectory, { recursive: true });

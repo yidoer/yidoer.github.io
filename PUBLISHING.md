@@ -17,11 +17,51 @@
 脚本会自动：
 
 - 更新 `data/articles.json` 或 `data/notes.json`
+- 校验数据格式（`scripts/validate-data.js`，失败会中止发布）
 - 生成独立永久链接
 - 生成文章或小记详情页
+- 更新 `sitemap.xml`
+- 更新 RSS / Atom 订阅源（`feed.xml`、`feed-notes.xml`、`feed-atom.xml`）
 - 为详情页接入按路径区分的评论
 
 完成后提交并推送到 GitHub，Pages 工作流会重新生成页面并发布。
+
+## 订阅源
+
+站点提供三份订阅源，页面 `<head>` 里已经写好自动发现链接，读者用任意 RSS 阅读器订阅首页地址即可：
+
+| 文件 | 格式 | 内容 |
+| --- | --- | --- |
+| `feed.xml` | RSS 2.0 | 全部内容（文章 + 小记，按时间倒序） |
+| `feed-notes.xml` | RSS 2.0 | 仅小记 |
+| `feed-atom.xml` | Atom 1.0 | 仅文章 |
+
+订阅源里的正文由 `js/markdown.js` 渲染，与网页正文使用同一份解析器，不会出现「网页正常、订阅器里是乱码」的情况。图片和站内链接会自动补成绝对地址。
+
+## 手动重新生成
+
+改了 `data/` 下的 JSON 之后，可以只跑生成脚本：
+
+```powershell
+node scripts/validate-data.js
+node scripts/generate-articles.js
+node scripts/generate-notes.js
+node scripts/generate-sitemap.js
+node scripts/generate-feed.js
+```
+
+本地预览：
+
+```powershell
+node scripts/serve.js 8899
+# 打开 http://127.0.0.1:8899/
+```
+
+页面自检（需要先启动上面的预览服务器）：
+
+```powershell
+node scripts/check-pages.js
+```
 
 ## 网页编辑器
 

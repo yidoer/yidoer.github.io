@@ -8,16 +8,21 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/pet.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📜</text></svg>">
+  <link rel="canonical" href="https://yidoer.github.io/about.html">
+  <link rel="alternate" type="application/rss+xml" title="人间浊物 琅上清书" href="https://yidoer.github.io/feed.xml">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="关于 - 人间浊物 琅上清书">
+  <meta property="og:description" content="人间浊物 琅上清书 — 一个基于纯静态文件构建的个人博客。">
+  <meta property="og:url" content="https://yidoer.github.io/about.html">
 </head>
 <body>
   <header class="site-header">
     <div class="header-inner">
       <a href="index.html" class="site-logo">
-        <img class="logo-avatar" src="images/touxiang.jpg" alt="清">
+        <img class="logo-avatar" src="images/touxiang.jpg" alt="清" width="30" height="30">
         <span>人间浊物</span>
       </a>
       <nav>
-        <button class="menu-toggle" id="menu-toggle" aria-label="打开菜单" title="菜单">☰</button>
         <ul class="nav-menu" id="nav-menu">
           <li><a href="index.html">首页</a></li>
           <li><a href="notes.html">小记</a></li>
@@ -37,21 +42,19 @@
 
       <div class="about-section">
         <div class="about-content">
-          <img class="about-avatar" src="images/touxiang.jpg" alt="清">
+          <img class="about-avatar" src="images/touxiang.jpg" alt="清" width="120" height="120">
           <h2 class="about-name">人间浊物</h2>
           <p class="about-motto">琅上清书</p>
 
           <div class="about-text">
-            <p>
-            冷暖阴晴君莫笑，晦明圆缺有人知.
-            <p>
+            <p>冷暖阴晴君莫笑，晦明圆缺有人知。</p>
           </div>
 
           <div class="about-links">
             <a href="https://github.com/yidoer" class="about-link" target="_blank" rel="noopener noreferrer">
               <span>🐙 GitHub</span>
             </a>
-            <a href="mailto:yidoer4@gamil.com" class="about-link">
+            <a href="mailto:yidoer4@gmail.com" class="about-link">
               <span>✉️ 邮箱</span>
             </a>
             <a href="editor.html" class="about-link">
@@ -65,22 +68,22 @@
       </div>
 
       <!-- 技术栈说明 -->
-      <div class="section-header" style="margin-top: 64px;">
+      <div class="section-header section-header--spaced">
         <h2 class="section-title">技术栈</h2>
       </div>
 
-      <div style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius); padding: 24px 28px; font-size: 0.95rem; line-height: 2; color: var(--text-secondary);">
+      <div class="info-panel">
         <p><strong>人间浊物 琅上清书</strong> 是一个基于纯静态文件构建的个人博客：</p>
-        <ul style="margin-left: 24px; margin-top: 8px;">
+        <ul class="info-panel-list">
           <li>纯 HTML + CSS + JavaScript，无框架依赖</li>
           <li>数据以 JSON 格式存储，便于维护与迁移</li>
           <li>支持 Markdown 格式的文章编辑</li>
           <li>内置深色/浅色双主题</li>
-          <li>集成 Utterances 评论系统（基于 GitHub Issues,已完成~）</li>
+          <li>集成 Utterances 评论系统（基于 GitHub Issues）</li>
           <li>图形化编辑后台，支持图片上传与数据导出</li>
         </ul>
-        <p style="margin-top: 16px;">
-          博客源码托管于 <a href="https://github.com/yidoer/yidoer.github.io" target="_blank" style="color: var(--accent-color);">GitHub</a>，
+        <p class="info-panel-footnote">
+          博客源码托管于 <a href="https://github.com/yidoer/yidoer.github.io" target="_blank" rel="noopener noreferrer">GitHub</a>，
           通过 GitHub Pages 部署发布。
         </p>
       </div>
@@ -94,8 +97,9 @@
         <a href="notes.html">小记</a>
         <a href="articles.html">文章</a>
         <a href="about.html">关于</a>
+        <a href="feed.xml" type="application/rss+xml">RSS</a>
       </div>
-      <p>© 2026 人间浊物. 琅上清书</p>
+      <p>&copy; 2026 人间浊物. 琅上清书</p>
     </div>
   </footer>
 

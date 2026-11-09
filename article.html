@@ -6,19 +6,38 @@
   <meta name="robots" content="noindex">
   <title>正在跳转 - 人间浊物 琅上清书</title>
   <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/pet.css">
 </head>
 <body>
-  <main class="site-main"><div class="content-wrapper"><div class="empty-state"><p class="empty-state-text">正在跳转到文章新地址...</p><p><a href="/articles.html">返回文章列表</a></p></div></div></main>
+  <main class="site-main">
+    <div class="content-wrapper">
+      <div class="empty-state">
+        <p class="empty-state-text" id="redirect-status">正在跳转到文章新地址...</p>
+        <p><a href="/articles.html">返回文章列表</a></p>
+      </div>
+    </div>
+  </main>
   <script src="/js/app.js"></script>
-  <script src="/js/pet.js" defer></script>
   <script>
     (async function() {
+      const status = document.getElementById('redirect-status');
       const articleId = new URLSearchParams(location.search).get('id');
-      const response = await fetch('/data/articles.json');
-      const data = await response.json();
-      const article = (data.articles || []).find(item => item.id === articleId);
-      if (article) location.replace(BlogApp.articleUrl(article));
+      if (!articleId) {
+        status.textContent = '缺少文章编号，请从文章列表选择。';
+        return;
+      }
+      try {
+        const response = await fetch('/data/articles.json');
+        if (!response.ok) throw new Error(response.status);
+        const data = await response.json();
+        const article = (data.articles || []).find(item => item.id === articleId);
+        if (article) {
+          location.replace(BlogApp.articleUrl(article));
+        } else {
+          status.textContent = '未找到该文章，可能已被删除。';
+        }
+      } catch (error) {
+        status.textContent = '文章数据加载失败，请稍后再试。';
+      }
     })();
   </script>
 </body>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>人间浊物 琅上清书 · 小记</title>
+    <link>https://yidoer.github.io/notes.html</link>
+    <description>片言只语，随感随记。</description>
+    <language>zh-CN</language>
+    <lastBuildDate>Thu, 08 Oct 2026 12:00:00 GMT</lastBuildDate>
+    <managingEditor>人间浊物</managingEditor>
+    <webMaster>人间浊物</webMaster>
+    <atom:link href="https://yidoer.github.io/feed-notes.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>小记 · 以太坊大跌了，我是蛆🤡</title>
+      <link>https://yidoer.github.io/notes/26/10/note-01/</link>
+      <guid isPermaLink="false">note-1791468661777-2j880k</guid>
+      <pubDate>Thu, 08 Oct 2026 12:00:00 GMT</pubDate>
+      <description>以太坊大跌了，我是蛆🤡</description>
+      <content:encoded><![CDATA[<p>以太坊大跌了，我是蛆🤡</p>]]></content:encoded>
+      <category>小记</category>
+    </item>
+    <item>
+      <title>小记 · 神来之笔 周一拍的，颜色比较和谐，有些漫画风。</title>
+      <link>https://yidoer.github.io/notes/26/07/note-02/</link>
+      <guid isPermaLink="false">note-2</guid>
+      <pubDate>Wed, 22 Jul 2026 12:00:00 GMT</pubDate>
+      <description>神来之笔 周一拍的，颜色比较和谐，有些漫画风。 图上横穿左右的其实是电线，但是我实在找不到没有杂物的视角了，如果AI修复一下也不是不行😃。</description>
+      <content:encoded><![CDATA[<h1>神来之笔</h1>
+<p><img src="https://yidoer.github.io/images/uploads/2026/07/22/1785068456631-mk3j71-1000036148.jpg" alt="1000036148" loading="lazy" decoding="async"></p>
+<p><img src="https://yidoer.github.io/images/uploads/2026/07/22/1785068465376-9iau34-1000036145.jpg" alt="1000036145" loading="lazy" decoding="async"></p>
+<p>周一拍的，颜色比较和谐，有些漫画风。 图上横穿左右的其实是电线，但是我实在找不到没有杂物的视角了，如果AI修复一下也不是不行😃。</p>]]></content:encoded>
+      <category>小记</category>
+    </item>
+    <item>
+      <title>小记 · 从这里开始...</title>
+      <link>https://yidoer.github.io/notes/26/07/note-01/</link>
+      <guid isPermaLink="false">note-1</guid>
+      <pubDate>Fri, 17 Jul 2026 12:00:00 GMT</pubDate>
+      <description>从这里开始...</description>
+      <content:encoded><![CDATA[<p>从这里开始...</p>]]></content:encoded>
+      <category>小记</category>
+    </item>
+  </channel>
+</rss>

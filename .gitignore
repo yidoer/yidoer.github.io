@@ -1,0 +1,24 @@
+# 编辑器与 IDE
+.idea/
+.vscode/
+*.swp
+
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 本地预览 / 截图 / 调试产物
+output/
+.playwright-cli/
+playwright-report/
+test-results/
+
+# 临时文件
+*.tmp
+*.log
+
+# 工具误建的目录（Windows 下 pwsh 重定向残留）
+null/
+PowerShell 7.6.6/
+.agents/

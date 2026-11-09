@@ -8,16 +8,22 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/pet.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📜</text></svg>">
+  <link rel="canonical" href="https://yidoer.github.io/articles.html">
+  <link rel="alternate" type="application/atom+xml" title="人间浊物 琅上清书 · 文章" href="https://yidoer.github.io/feed-atom.xml">
+  <link rel="alternate" type="application/rss+xml" title="人间浊物 琅上清书" href="https://yidoer.github.io/feed.xml">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="文章 - 人间浊物 琅上清书">
+  <meta property="og:description" content="长篇大论，慎思而著。或叙或议，但求言之有物。">
+  <meta property="og:url" content="https://yidoer.github.io/articles.html">
 </head>
 <body>
   <header class="site-header">
     <div class="header-inner">
       <a href="index.html" class="site-logo">
-        <img class="logo-avatar" src="images/touxiang.jpg" alt="清">
+        <img class="logo-avatar" src="images/touxiang.jpg" alt="清" width="30" height="30">
         <span>人间浊物</span>
       </a>
       <nav>
-        <button class="menu-toggle" id="menu-toggle" aria-label="打开菜单" title="菜单">☰</button>
         <ul class="nav-menu" id="nav-menu">
           <li><a href="index.html">首页</a></li>
           <li><a href="notes.html">小记</a></li>
@@ -34,14 +40,10 @@
       <div class="section-header">
         <h1 class="section-title">文章</h1>
       </div>
-      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 32px; font-family: var(--font-serif); font-style: italic;">
-        长篇大论，慎思而著。或叙或议，但求言之有物。
-      </p>
+      <p class="page-intro">长篇大论，慎思而著。或叙或议，但求言之有物。</p>
 
       <!-- 标签筛选 -->
-      <div class="tag-list" id="tag-list" style="display: none;">
-        <span class="tag-item active" data-tag="">全部</span>
-      </div>
+      <div class="tag-list" id="tag-list" hidden></div>
 
       <div class="article-grid" id="articles-list">
         <div class="empty-state">
@@ -50,7 +52,7 @@
         </div>
       </div>
 
-      <div class="pagination" id="pagination" style="display: none;">
+      <div class="pagination" id="pagination" hidden>
         <button class="pagination-btn" id="prev-btn" disabled>← 上一页</button>
         <span class="pagination-info" id="page-info">1 / 1</span>
         <button class="pagination-btn" id="next-btn" disabled>下一页 →</button>
@@ -65,8 +67,9 @@
         <a href="notes.html">小记</a>
         <a href="articles.html">文章</a>
         <a href="about.html">关于</a>
+        <a href="feed.xml" type="application/rss+xml">RSS</a>
       </div>
-      <p>© 2026 人间浊物. 琅上清书 </p>
+      <p>&copy; 2026 人间浊物. 琅上清书</p>
     </div>
   </footer>
 
@@ -78,108 +81,66 @@
     (async function() {
       const PAGE_SIZE = 10;
       let currentPage = 1;
-      let allArticles = [];
-      let filteredArticles = [];
       let currentTag = '';
 
-      allArticles = await BlogApp.loadData('articles');
-      // 按日期倒序排列
-      allArticles.sort((a, b) => new Date(b.date) - new Date(a.date));
-      filteredArticles = [...allArticles];
-
-      // 收集所有标签
-      const allTags = new Set();
-      allArticles.forEach(article => {
-        (article.tags || []).forEach(tag => allTags.add(tag));
-      });
+      const allArticles = BlogApp.sortByDateDesc(await BlogApp.loadData('articles'));
+      let filteredArticles = [...allArticles];
 
       const tagList = document.getElementById('tag-list');
-      if (allTags.size > 0) {
-        tagList.style.display = 'flex';
-        const tagsHtml = Array.from(allTags).sort().map(tag =>
-          `<span class="tag-item" data-tag="${tag}">${tag}</span>`
-        ).join('');
-        tagList.innerHTML = `<span class="tag-item active" data-tag="">全部</span>${tagsHtml}`;
-      }
-
-      // 标签点击事件
-      tagList.addEventListener('click', (e) => {
-        if (e.target.classList.contains('tag-item')) {
-          tagList.querySelectorAll('.tag-item').forEach(t => t.classList.remove('active'));
-          e.target.classList.add('active');
-          currentTag = e.target.dataset.tag;
-          currentPage = 1;
-
-          if (currentTag === '') {
-            filteredArticles = [...allArticles];
-          } else {
-            filteredArticles = allArticles.filter(a => (a.tags || []).includes(currentTag));
-          }
-          renderPage();
-        }
-      });
-
       const articlesList = document.getElementById('articles-list');
       const pagination = document.getElementById('pagination');
       const prevBtn = document.getElementById('prev-btn');
       const nextBtn = document.getElementById('next-btn');
       const pageInfo = document.getElementById('page-info');
 
-      function renderPage() {
-        const totalPages = Math.ceil(filteredArticles.length / PAGE_SIZE) || 1;
-        const start = (currentPage - 1) * PAGE_SIZE;
-        const end = start + PAGE_SIZE;
-        const pageArticles = filteredArticles.slice(start, end);
+      // 收集所有标签
+      const allTags = new Set();
+      allArticles.forEach(article => (article.tags || []).forEach(tag => allTags.add(tag)));
 
-        if (pageArticles.length === 0) {
-          articlesList.innerHTML = `
-            <div class="empty-state">
-              <div class="empty-state-icon">📝</div>
-              <p class="empty-state-text">暂无文章</p>
-            </div>
-          `;
-        } else {
-          articlesList.innerHTML = pageArticles.map((article, index) => `
-            <a href="${BlogApp.articleUrl(article)}" class="article-card fade-in fade-in-delay-${Math.min(index + 1, 4)}">
-              <div class="article-card-header">
-                <span class="article-date">${BlogApp.formatDate(article.date)}</span>
-                <span class="article-category">${article.category || '未分类'}</span>
-              </div>
-              <h3 class="article-card-title">${article.title}</h3>
-              <p class="article-card-excerpt">${BlogApp.truncate(article.excerpt || '', 80)}</p>
-              <div class="article-card-tags">
-                ${(article.tags || []).map(tag => `<span class="article-tag">${tag}</span>`).join('')}
-              </div>
-            </a>
-          `).join('');
-        }
-
-        if (totalPages > 1) {
-          pagination.style.display = 'flex';
-          pageInfo.textContent = `${currentPage} / ${totalPages}`;
-          prevBtn.disabled = currentPage <= 1;
-          nextBtn.disabled = currentPage >= totalPages;
-        } else {
-          pagination.style.display = 'none';
-        }
+      if (allTags.size > 0) {
+        const tagsHtml = Array.from(allTags).sort()
+          .map(tag => `<span class="tag-item" data-tag="${BlogApp.escapeHtml(tag)}">${BlogApp.escapeHtml(tag)}</span>`)
+          .join('');
+        tagList.innerHTML = `<span class="tag-item active" data-tag="">全部</span>${tagsHtml}`;
+        tagList.hidden = false;
       }
 
-      prevBtn.addEventListener('click', () => {
-        if (currentPage > 1) {
-          currentPage--;
-          renderPage();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+      tagList.addEventListener('click', event => {
+        const item = event.target.closest('.tag-item');
+        if (!item) return;
+        tagList.querySelectorAll('.tag-item').forEach(t => t.classList.remove('active'));
+        item.classList.add('active');
+        currentTag = item.dataset.tag || '';
+        currentPage = 1;
+        filteredArticles = currentTag === ''
+          ? [...allArticles]
+          : allArticles.filter(article => (article.tags || []).includes(currentTag));
+        renderPage();
       });
 
-      nextBtn.addEventListener('click', () => {
+      function renderPage() {
         const totalPages = Math.ceil(filteredArticles.length / PAGE_SIZE) || 1;
-        if (currentPage < totalPages) {
-          currentPage++;
-          renderPage();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      });
+        if (currentPage > totalPages) currentPage = totalPages;
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const pageArticles = filteredArticles.slice(start, start + PAGE_SIZE);
+
+        articlesList.innerHTML = pageArticles.length === 0
+          ? BlogApp.emptyStateHtml('📝', currentTag ? '该标签下暂无文章' : '暂无文章')
+          : pageArticles.map((article, index) => BlogApp.articleCardHtml(article, index)).join('');
+
+        BlogApp.renderPagination({ totalPages, currentPage, pagination, pageInfo, prevBtn, nextBtn });
+      }
+
+      function goToPage(page) {
+        const totalPages = Math.ceil(filteredArticles.length / PAGE_SIZE) || 1;
+        if (page < 1 || page > totalPages || page === currentPage) return;
+        currentPage = page;
+        renderPage();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      prevBtn.addEventListener('click', () => goToPage(currentPage - 1));
+      nextBtn.addEventListener('click', () => goToPage(currentPage + 1));
 
       renderPage();
     })();

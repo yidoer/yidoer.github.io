@@ -8,16 +8,22 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/pet.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📜</text></svg>">
+  <link rel="canonical" href="https://yidoer.github.io/notes.html">
+  <link rel="alternate" type="application/rss+xml" title="人间浊物 琅上清书 · 小记" href="https://yidoer.github.io/feed-notes.xml">
+  <link rel="alternate" type="application/rss+xml" title="人间浊物 琅上清书" href="https://yidoer.github.io/feed.xml">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="小记 - 人间浊物 琅上清书">
+  <meta property="og:description" content="片言只语，随感随记。不求长篇，但求真意。">
+  <meta property="og:url" content="https://yidoer.github.io/notes.html">
 </head>
 <body>
   <header class="site-header">
     <div class="header-inner">
       <a href="index.html" class="site-logo">
-        <img class="logo-avatar" src="images/touxiang.jpg" alt="清">
+        <img class="logo-avatar" src="images/touxiang.jpg" alt="清" width="30" height="30">
         <span>人间浊物</span>
       </a>
       <nav>
-        <button class="menu-toggle" id="menu-toggle" aria-label="打开菜单" title="菜单">☰</button>
         <ul class="nav-menu" id="nav-menu">
           <li><a href="index.html">首页</a></li>
           <li><a href="notes.html">小记</a></li>
@@ -34,9 +40,7 @@
       <div class="section-header">
         <h1 class="section-title">小记</h1>
       </div>
-      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 32px; font-family: var(--font-serif); font-style: italic;">
-        片言只语，随感随记。不求长篇，但求真意。
-      </p>
+      <p class="page-intro">片言只语，随感随记。不求长篇，但求真意。</p>
 
       <div class="notes-list" id="notes-list">
         <div class="empty-state">
@@ -45,7 +49,7 @@
         </div>
       </div>
 
-      <div class="pagination" id="pagination" style="display: none;">
+      <div class="pagination" id="pagination" hidden>
         <button class="pagination-btn" id="prev-btn" disabled>← 上一页</button>
         <span class="pagination-info" id="page-info">1 / 1</span>
         <button class="pagination-btn" id="next-btn" disabled>下一页 →</button>
@@ -60,8 +64,9 @@
         <a href="notes.html">小记</a>
         <a href="articles.html">文章</a>
         <a href="about.html">关于</a>
+        <a href="feed.xml" type="application/rss+xml">RSS</a>
       </div>
-      <p>© 2024 人间浊物. 以墨为友，以书为伴。</p>
+      <p>&copy; 2026 人间浊物. 琅上清书</p>
     </div>
   </footer>
 
@@ -73,11 +78,8 @@
     (async function() {
       const PAGE_SIZE = 10;
       let currentPage = 1;
-      let allNotes = [];
 
-      allNotes = await BlogApp.loadData('notes');
-      // 按日期倒序排列
-      allNotes.sort((a, b) => new Date(b.date) - new Date(a.date));
+      const allNotes = BlogApp.sortByDateDesc(await BlogApp.loadData('notes'));
 
       const notesList = document.getElementById('notes-list');
       const pagination = document.getElementById('pagination');
@@ -87,53 +89,27 @@
 
       function renderPage() {
         const totalPages = Math.ceil(allNotes.length / PAGE_SIZE) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
         const start = (currentPage - 1) * PAGE_SIZE;
-        const end = start + PAGE_SIZE;
-        const pageNotes = allNotes.slice(start, end);
+        const pageNotes = allNotes.slice(start, start + PAGE_SIZE);
 
-        if (pageNotes.length === 0) {
-          notesList.innerHTML = `
-            <div class="empty-state">
-              <div class="empty-state-icon">📌</div>
-              <p class="empty-state-text">暂无小记</p>
-            </div>
-          `;
-        } else {
-          notesList.innerHTML = pageNotes.map((note, index) => `
-            <a href="${BlogApp.noteUrl(note)}" class="note-item note-link fade-in fade-in-delay-${Math.min(index + 1, 4)}">
-              <div class="note-date">${BlogApp.formatDate(note.date)}</div>
-              <div class="note-content">${BlogApp.truncate(note.content, 80)}</div>
-              <span class="note-comment-link">查看与评论 →</span>
-            </a>
-          `).join('');
-        }
+        notesList.innerHTML = pageNotes.length === 0
+          ? BlogApp.emptyStateHtml('📌', '暂无小记')
+          : pageNotes.map((note, index) => BlogApp.noteCardHtml(note, index)).join('');
 
-        if (totalPages > 1) {
-          pagination.style.display = 'flex';
-          pageInfo.textContent = `${currentPage} / ${totalPages}`;
-          prevBtn.disabled = currentPage <= 1;
-          nextBtn.disabled = currentPage >= totalPages;
-        } else {
-          pagination.style.display = 'none';
-        }
+        BlogApp.renderPagination({ totalPages, currentPage, pagination, pageInfo, prevBtn, nextBtn });
       }
 
-      prevBtn.addEventListener('click', () => {
-        if (currentPage > 1) {
-          currentPage--;
-          renderPage();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      });
-
-      nextBtn.addEventListener('click', () => {
+      function goToPage(page) {
         const totalPages = Math.ceil(allNotes.length / PAGE_SIZE) || 1;
-        if (currentPage < totalPages) {
-          currentPage++;
-          renderPage();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      });
+        if (page < 1 || page > totalPages || page === currentPage) return;
+        currentPage = page;
+        renderPage();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      prevBtn.addEventListener('click', () => goToPage(currentPage - 1));
+      nextBtn.addEventListener('click', () => goToPage(currentPage + 1));
 
       renderPage();
     })();

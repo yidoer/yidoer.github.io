@@ -8,16 +8,26 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/pet.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📜</text></svg>">
-  </head>
+  <link rel="canonical" href="https://yidoer.github.io/">
+  <link rel="alternate" type="application/rss+xml" title="人间浊物 琅上清书" href="https://yidoer.github.io/feed.xml">
+  <link rel="alternate" type="application/rss+xml" title="小记" href="https://yidoer.github.io/feed-notes.xml">
+  <link rel="alternate" type="application/atom+xml" title="文章" href="https://yidoer.github.io/feed-atom.xml">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="人间浊物 琅上清书">
+  <meta property="og:title" content="人间浊物 琅上清书">
+  <meta property="og:description" content="个人博客 · 以墨为友 — 长篇大论与片言只语。">
+  <meta property="og:url" content="https://yidoer.github.io/">
+  <meta property="og:image" content="https://yidoer.github.io/images/touxiang.jpg">
+  <meta name="twitter:card" content="summary">
+</head>
 <body>
   <header class="site-header">
     <div class="header-inner">
       <a href="index.html" class="site-logo">
-        <img class="logo-avatar" src="images/touxiang.jpg" alt="清">
+        <img class="logo-avatar" src="images/touxiang.jpg" alt="清" width="30" height="30">
         <span>人间浊物</span>
       </a>
       <nav>
-        <button class="menu-toggle" id="menu-toggle" aria-label="打开菜单" title="菜单">☰</button>
         <ul class="nav-menu" id="nav-menu">
           <li><a href="index.html">首页</a></li>
           <li><a href="notes.html">小记</a></li>
@@ -36,7 +46,8 @@
         <span class="hero-eyebrow">个人博客 · 以墨为友</span>
         <h1 class="hero-title">人间浊物</h1>
         <p class="hero-subtitle">琅上清书</p>
-        <div class="hero-divider"></div></div>
+        <div class="hero-divider"></div>
+      </div>
       <a href="#latest" class="hero-scroll">
         <span>向下</span>
         <span>↓</span>
@@ -58,7 +69,7 @@
       </div>
 
       <!-- 最新小记 -->
-      <div class="section-header" style="margin-top: 64px;">
+      <div class="section-header section-header--spaced">
         <h2 class="section-title">最新小记</h2>
         <a href="notes.html" class="section-more">查看全部 →</a>
       </div>
@@ -79,6 +90,7 @@
         <a href="articles.html">文章</a>
         <a href="about.html">关于</a>
         <a href="editor.html">编辑</a>
+        <a href="feed.xml" type="application/rss+xml">RSS</a>
       </div>
       <p>&copy; 2026 人间浊物. 琅上清书</p>
     </div>
@@ -94,48 +106,24 @@
       const articles = await BlogApp.loadData('articles');
       const latestArticlesContainer = document.getElementById('latest-articles');
       if (articles.length === 0) {
-        latestArticlesContainer.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">📝</div>
-            <p class="empty-state-text">暂无文章</p>
-          </div>
-        `;
+        latestArticlesContainer.innerHTML = BlogApp.emptyStateHtml('📝', '暂无文章');
       } else {
         const latest = BlogApp.sortByDateDesc(articles).slice(0, 3);
-        latestArticlesContainer.innerHTML = latest.map((article, index) => `
-          <a href="${BlogApp.articleUrl(article)}" class="article-card fade-in fade-in-delay-${index + 1}">
-            <div class="article-card-header">
-              <span class="article-date">${BlogApp.formatDate(article.date)}</span>
-              <span class="article-category">${article.category || '未分类'}</span>
-            </div>
-            <h3 class="article-card-title">${article.title}</h3>
-            <p class="article-card-excerpt">${BlogApp.truncate(article.excerpt || '', 80)}</p>
-            <div class="article-card-tags">
-              ${(article.tags || []).map(tag => `<span class="article-tag">${tag}</span>`).join('')}
-            </div>
-          </a>
-        `).join('');
+        latestArticlesContainer.innerHTML = latest
+          .map((article, index) => BlogApp.articleCardHtml(article, index))
+          .join('');
       }
 
       // 加载最新小记
       const notes = await BlogApp.loadData('notes');
       const latestNotesContainer = document.getElementById('latest-notes');
       if (notes.length === 0) {
-        latestNotesContainer.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">📌</div>
-            <p class="empty-state-text">暂无小记</p>
-          </div>
-        `;
+        latestNotesContainer.innerHTML = BlogApp.emptyStateHtml('📌', '暂无小记');
       } else {
         const latest = BlogApp.sortByDateDesc(notes).slice(0, 4);
-        latestNotesContainer.innerHTML = latest.map((note, index) => `
-          <a href="${BlogApp.noteUrl(note)}" class="note-item note-link fade-in fade-in-delay-${index + 1}">
-            <div class="note-date">${BlogApp.formatDate(note.date)}</div>
-            <div class="note-content">${BlogApp.truncate(note.content, 80)}</div>
-            <span class="note-comment-link">查看与评论 →</span>
-          </a>
-        `).join('');
+        latestNotesContainer.innerHTML = latest
+          .map((note, index) => BlogApp.noteCardHtml(note, index))
+          .join('');
       }
     })();
   </script>
