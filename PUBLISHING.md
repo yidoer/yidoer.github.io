@@ -65,7 +65,9 @@ node scripts/check-pages.js
 
 ## 网页编辑器
 
-也可以打开 `editor.html`，在“导出/导入”页点击“选择博客根目录”，选择包含 `data/`、`images/` 的项目目录。推荐使用最新版 Chrome 或 Edge。
+编辑入口统一收在「关于」页的页脚，那里有两项：`✏️ 编辑后台`（`editor.html`）和 `📱 手机发布`（`mobile-editor.html`）。其他页面的页脚只有普通导航，不会再出现编辑链接。
+
+也可以直接打开 `editor.html`，在“导出/导入”页点击“选择博客根目录”，选择包含 `data/`、`images/` 的项目目录。推荐使用最新版 Chrome 或 Edge。
 
 连接后：
 
@@ -78,7 +80,7 @@ node scripts/check-pages.js
 
 ### 手机发布
 
-手机访问线上 `editor.html` 后，可以正常新建文章、小记，并从相册上传图片。图片会暂存在手机浏览器的 IndexedDB 中，不会转成 Base64 写进正文。
+手机访问线上站点后，从「关于」页页脚点击 `📱 手机发布` 进入 `mobile-editor.html`，可以正常新建文章、小记，并从相册上传图片。图片会暂存在手机浏览器的 IndexedDB 中，不会转成 Base64 写进正文。
 
 发布步骤：
 

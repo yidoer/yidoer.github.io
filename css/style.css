@@ -231,6 +231,10 @@ button,input,textarea,select{font:inherit}
 .footer-links{display:flex;justify-content:center;gap:20px;margin-bottom:12px;flex-wrap:wrap}
 .footer-links a{color:var(--muted);transition:color .2s ease}
 .footer-links a:hover{color:var(--accent)}
+.footer-tools{display:flex;justify-content:center;align-items:center;gap:20px;margin-bottom:12px;flex-wrap:wrap}
+.footer-tools-label{font-size:.72rem;color:var(--muted);letter-spacing:.14em;opacity:.6}
+.footer-tools a{color:var(--muted);transition:color .2s ease}
+.footer-tools a:hover{color:var(--accent)}
 
 /* ---------- 通用控件 ---------- */
 .button,.pagination-btn,.editor-btn,.about-link{font-family:var(--font-sans)}
