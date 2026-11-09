@@ -2736,7 +2736,17 @@ window.__crabSetTheme = (hex, dark) => {
   document.documentElement.style.setProperty('--pet-bg', hex || '');
   BG_FIELD = pageField();
 };
-window.__crabSetTheme('', false);
+// Only the standalone workshop page owns the theme. When the crab lives inside a blog page
+// (freeMode), the host page owns it — resetting here would silently undo the reader's choice.
+// Instead we just follow it: pick up the current theme now, and again whenever it changes, so the
+// studio sweep keeps matching the page behind the toy.
+if (document.body.classList.contains('pet-free')) {
+  BG_FIELD = pageField();
+  new MutationObserver(() => { BG_FIELD = pageField(); })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+} else {
+  window.__crabSetTheme('', false);
+}
 
 const SCALE_CM = 10;       // illustrative: 1 simulation unit ≈ 10 cm (the crab is ~17 cm across its shell, ~30 cm with its legs out)
 const DENSITY = 0.03;      // g/cm³, polyester fibrefill in a minky shell
