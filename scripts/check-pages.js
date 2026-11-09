@@ -3,10 +3,34 @@
  * 用法：node scripts/check-pages.js
  * 需要先启动 scripts/serve.js
  */
+const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
 
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:8899';
+const ROOT = path.join(__dirname, '..');
+
+// 详情页由生成脚本产出，数量随内容增长，故按目录实际存在的情况动态收集
+function collectDetailPages(dir, check) {
+  const found = [];
+  const walk = current => {
+    let entries;
+    try {
+      entries = fs.readdirSync(current, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    if (entries.some(e => e.isFile() && e.name === 'index.html')) {
+      const rel = path.relative(ROOT, current).split(path.sep).join('/');
+      found.push({ path: '/' + rel + '/index.html', check });
+    }
+    for (const entry of entries) {
+      if (entry.isDirectory()) walk(path.join(current, entry.name));
+    }
+  };
+  walk(path.join(ROOT, dir));
+  return found.sort((a, b) => a.path.localeCompare(b.path));
+}
 
 const PAGES = [
   { path: '/index.html', check: 'article/note 列表' },
@@ -16,8 +40,8 @@ const PAGES = [
   { path: '/404.html', check: '404 页' },
   { path: '/editor.html', check: '编辑器' },
   { path: '/mobile-editor.html', check: '手机编辑器' },
-  { path: '/articles/26/09/article-01/index.html', check: '文章详情' },
-  { path: '/notes/26/07/note-02/index.html', check: '小记详情' }
+  ...collectDetailPages('articles', '文章详情'),
+  ...collectDetailPages('notes', '小记详情')
 ];
 
 (async () => {
